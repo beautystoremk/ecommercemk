@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}Contacto & Ubicación | BEAUTY STORE MARY KAY{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-10">
+
+    <!-- Encabezado Principal -->
+    <div class="text-center space-y-3">
+        <span class="text-xs font-bold text-mk-deep uppercase tracking-widest bg-mk-lightpink px-4 py-1.5 rounded-full border border-mk-rosaviejo/30">
+            Atención Personalizada
+        </span>
+        <h1 class="font-serif-mk text-3xl sm:text-4xl font-bold text-mk-dark">Ponte en Contacto con Nosotros</h1>
+        <p class="text-xs sm:text-sm text-gray-500 max-w-xl mx-auto">
+            ¿Tienes dudas sobre algún producto o deseas recibir asesoramiento exclusivo de cuidado de la piel? Escríbenos o visítanos en nuestro local.
+        </p>
+    </div>
+
+    <!-- Notificación de Éxito tras enviar el formulario -->
+    {% if enviado %}
+    <div class="bg-green-50 border-2 border-green-200 text-green-800 p-4 rounded-2xl text-xs font-bold text-center shadow-sm max-w-2xl mx-auto flex items-center justify-center space-x-2">
+        <i class="fa-solid fa-circle-check text-base text-green-600"></i>
+        <span>¡Muchas gracias! Tu mensaje ha sido enviado correctamente. Te responderemos a la brevedad.</span>
+    </div>
+    {% endif %}
+
+    <!-- Rejilla Principal de 2 Columnas Proporcionadas -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+
+        <!-- COLUMNA IZQUIERDA: FORMULARIO DE ENVÍO DE EMAIL -->
+        <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-mk-lightpink space-y-6">
+            <div class="border-b border-mk-lightpink pb-4">
+                <h2 class="font-serif-mk text-xl font-bold text-mk-dark">Enviarnos un Mensaje</h2>
+                <p class="text-xs text-gray-400 mt-1">Completa el formulario y te contactaremos a tu correo electrónico.</p>
+            </div>
+
+            <form action="/contacto" method="POST" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nombre Completo</label>
+                    <input type="text" name="nombre" placeholder="Ej: María González" required 
+                           class="w-full text-xs p-3.5 rounded-xl border border-gray-200 bg-mk-softgray focus:bg-white focus:border-mk-pink focus:outline-none transition">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Correo Electrónico</label>
+                    <input type="email" name="email" placeholder="ejemplo@correo.com" required 
+                           class="w-full text-xs p-3.5 rounded-xl border border-gray-200 bg-mk-softgray focus:bg-white focus:border-mk-pink focus:outline-none transition">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Mensaje o Consulta</label>
+                    <textarea name="mensaje" rows="5" placeholder="Escribe aquí tu consulta sobre productos, tonos o asesoramiento..." required 
+                              class="w-full text-xs p-3.5 rounded-xl border border-gray-200 bg-mk-softgray focus:bg-white focus:border-mk-pink focus:outline-none transition"></textarea>
+                </div>
+
+                <button type="submit" class="w-full bg-mk-dark hover:bg-mk-deep text-white text-xs font-bold py-3.5 px-6 rounded-xl transition shadow-md flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-paper-plane"></i>
+                    <span>Enviar Mensaje</span>
+                </button>
+            </form>
+        </div>
+
+        <!-- COLUMNA DERECHA: DATOS DE ATENCIÓN Y GOOGLE MAPS -->
+        <div class="space-y-6">
+            
+            <!-- Tarjeta Informativa del Local (Diseño de 1 columna vertical para evitar recortes) -->
+            <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-mk-lightpink space-y-4">
+                <h2 class="font-serif-mk text-xl font-bold text-mk-dark border-b border-mk-lightpink pb-3">Información del Local</h2>
+                
+                <div class="grid grid-cols-1 gap-3 text-xs">
+                    
+                    <!-- Dirección -->
+                    <div class="flex items-start space-x-3 bg-mk-softrose/40 p-4 rounded-2xl border border-mk-rosaviejo/20 min-w-0">
+                        <i class="fa-solid fa-location-dot text-mk-deep text-base mt-0.5 flex-shrink-0"></i>
+                        <div class="min-w-0 flex-1">
+                            <strong class="block text-mk-dark font-bold text-xs uppercase mb-0.5">Dirección</strong>
+                            <span class="text-gray-600 block break-words">Sandwich del Sur 6050, Carbometal</span>
+                            <span class="text-gray-400 text-[10px] block break-words">Carrodilla, Luján de Cuyo, Mendoza</span>
+                        </div>
+                    </div>
+
+                    <!-- WhatsApp Directo -->
+                    <div class="flex items-start space-x-3 bg-mk-softrose/40 p-4 rounded-2xl border border-mk-rosaviejo/20 min-w-0">
+                        <i class="fa-brands fa-whatsapp text-green-600 text-base mt-0.5 flex-shrink-0"></i>
+                        <div class="min-w-0 flex-1">
+                            <strong class="block text-mk-dark font-bold text-xs uppercase mb-0.5">WhatsApp Directo</strong>
+                            <a href="https://wa.me/5492616142896" target="_blank" rel="noopener noreferrer" class="text-mk-deep font-bold hover:underline block break-all">+54 9 261 614-2896</a>
+                        </div>
+                    </div>
+
+                    <!-- Horarios de Atención -->
+                    <div class="flex items-start space-x-3 bg-mk-softrose/40 p-4 rounded-2xl border border-mk-rosaviejo/20 min-w-0">
+                        <i class="fa-solid fa-clock text-mk-deep text-base mt-0.5 flex-shrink-0"></i>
+                        <div class="min-w-0 flex-1">
+                            <strong class="block text-mk-dark font-bold text-xs uppercase mb-0.5">Horarios de Atención</strong>
+                            <span class="text-gray-600 block break-words">Lun a Vie: Atencion 24 hs | Sábados: Atencion 24 hs</span>
+                        </div>
+                    </div>
+
+                    <!-- Correo de Contacto -->
+                    <div class="flex items-start space-x-3 bg-mk-softrose/40 p-4 rounded-2xl border border-mk-rosaviejo/20 min-w-0">
+                        <i class="fa-solid fa-envelope text-mk-deep text-base mt-0.5 flex-shrink-0"></i>
+                        <div class="min-w-0 flex-1">
+                            <strong class="block text-mk-dark font-bold text-xs uppercase mb-0.5">Correo Electrónico</strong>
+                            <span class="text-gray-600 block break-all font-medium">analia.alejandra74@gmail.com</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- CONTENEDOR DE MAPA DE GOOGLE MAPS -->
+            <div class="bg-white rounded-3xl p-3 shadow-sm border border-mk-lightpink overflow-hidden">
+                <div class="relative w-full h-[320px] rounded-2xl overflow-hidden shadow-inner bg-gray-100">
+                    <iframe 
+                        title="Ubicación exacta del local"
+                        src="https://maps.google.com/maps?q=-32.983054,-68.855298&z=17&output=embed" 
+                        class="w-full h-full border-0" 
+                        allowfullscreen="" 
+                        loading="lazy" 
+                        referrerpolicy="no-referrer-when-downgrade">
+                    </iframe>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}MARY KAY Beauty Store | Carrodilla - Mendoza{% endblock %}</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        mk: {
+                            pink: '#E8A0BF',
+                            lightpink: '#F9F0F5',
+                            rosaviejo: '#D4A5B8',
+                            softrose: '#F7EFEF',
+                            dark: '#222222',
+                            deep: '#C2185B',
+                            softgray: '#FAFAFA'
+                        }
+                    },
+                    fontFamily: {
+                        'serif-mk': ['Playfair Display', 'serif'],
+                        'sans-mk': ['Plus Jakarta Sans', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome para Íconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @keyframes marquee {
+            0% { transform: translateX(0%); }
+            100% { transform: translateX(-50%); }
+        }
+        .animate-marquee {
+            display: inline-block;
+            animation: marquee 28s linear infinite;
+        }
+        .animate-marquee:hover {
+            animation-play-state: paused;
+        }
+    </style>
+</head>
+<body class="bg-mk-softgray font-sans-mk text-gray-800 antialiased flex flex-col min-h-screen">
+
+    <!-- BARRA DE PUBLICIDAD SUPERIOR DESPLAZABLE -->
+    <div class="bg-mk-deep text-white text-[11px] font-bold py-1.5 overflow-hidden whitespace-nowrap border-b border-white/10 shadow-inner relative z-50">
+        <div class="animate-marquee tracking-wider uppercase">
+            <span>{{ texto_publicidad if texto_publicidad else '✨ 💖 ¡Bienvenidos a Beauty Store Mary Kay! 🛍️ Envíos gratis en compras seleccionadas y asesoría personalizada online 🚚 ✨' }}</span>
+            &nbsp;&nbsp;&nbsp;&nbsp;&bull;&nbsp;&nbsp;&nbsp;&nbsp;
+            <span>{{ texto_publicidad if texto_publicidad else '✨ 💖 ¡Bienvenidos a Beauty Store Mary Kay! 🛍️ Envíos gratis en compras seleccionadas y asesoría personalizada online 🚚 ✨' }}</span>
+        </div>
+    </div>
+
+    <!-- Navbar Navegación Principal con Buscador Integrado -->
+    <header class="sticky top-0 z-50 bg-mk-deep/95 backdrop-blur-md border-b border-mk-pink/30 shadow-md transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
+            
+            <!-- Logo & Marca -->
+            <a href="/" class="flex items-center space-x-3 group flex-shrink-0">
+                <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white border border-mk-pink flex items-center justify-center text-mk-deep font-bold text-base sm:text-lg font-serif-mk shadow-sm group-hover:scale-105 transition transform">
+                    MK
+                </div>
+                <div class="hidden sm:block">
+                    <span class="font-serif-mk text-lg sm:text-xl font-bold tracking-wider text-white block leading-none">BEAUTY STORE | MARY KAY</span>
+                    <span class="text-[10px] text-mk-lightpink uppercase tracking-widest font-semibold">Analia A. Dominguez</span>
+                </div>
+            </a>
+
+            <!-- BUSCADOR DEL LOCAL INTEGRADO EN NAVBAR -->
+            <div class="flex-grow max-w-xs sm:max-w-md relative">
+                <form action="/#catalogo" method="GET" onsubmit="buscarProductoNav(event)" class="relative">
+                    <input type="text" id="nav-search-input" placeholder="Buscar productos, labiales, cremas..." 
+                           class="w-full bg-white/10 hover:bg-white/20 focus:bg-white text-white focus:text-mk-dark placeholder-white/70 focus:placeholder-gray-400 text-xs py-2.5 pl-9 pr-8 rounded-full border border-white/20 focus:border-mk-pink focus:outline-none transition-all shadow-inner">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-white/70 text-xs pointer-events-none"></i>
+                    <button type="button" onclick="limpiarBuscadorNav()" id="clear-search-btn" class="hidden absolute right-3 top-2.5 text-white/70 hover:text-white text-xs">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Menú de Navegación -->
+            <nav class="hidden lg:flex items-center space-x-6 text-xs uppercase font-bold tracking-wider text-white/90">
+                <a href="/" class="hover:text-white transition">Inicio</a>
+                <a href="/#catalogo" class="hover:text-white transition">Catálogo</a>
+                <a href="/blog" class="hover:text-white transition">Tips & Blog</a>
+                <a href="/contacto" class="hover:text-white transition">Contacto</a>
+                <a href="/seguimiento" class="bg-mk-softgray hover:bg-[#a81c4e] text-mk-dark hover:text-white px-3.5 py-1.5 rounded-xl text-xs font-bold transition duration-300 border border-mk-lightpink hover:border-[#a81c4e] flex items-center gap-1.5 shadow-sm group">
+                    <i class="fa-solid fa-truck-ramp-box text-mk-deep group-hover:text-white transition duration-300"></i> SEGUIR MI PEDIDO
+                </a>
+            </nav>
+
+            <!-- Carrito con Contador Dinámico Sincronizado -->
+            <div class="flex items-center space-x-3 flex-shrink-0">
+                <a href="/carrito" class="relative bg-white/10 hover:bg-white/20 text-white p-2.5 sm:p-3 rounded-full transition shadow-sm flex items-center justify-center">
+                    <i class="fa-solid fa-bag-shopping text-base text-white"></i>
+                    <span id="cart-counter" class="absolute -top-1 -right-1 bg-white text-mk-deep text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-mk-deep">0</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <script>
+        function updateCartCounter() {
+            try {
+                const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+                const totalItems = cart.reduce((acc, item) => acc + (parseInt(item.cantidad) || 1), 0);
+                const badge = document.getElementById('cart-counter');
+                if (badge) {
+                    badge.innerText = totalItems;
+                }
+            } catch (e) {
+                console.error("Error al actualizar el contador del carrito", e);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateCartCounter();
+            window.addEventListener('storage', updateCartCounter);
+        });
+
+        function buscarProductoNav(event) {
+            event.preventDefault();
+            const query = document.getElementById('nav-search-input').value.trim().toLowerCase();
+            if (!query) return;
+
+            if (window.location.pathname === '/') {
+                const productos = document.querySelectorAll('.producto-card');
+                productos.forEach(card => {
+                    const nombre = card.getAttribute('data-nombre') || '';
+                    if (nombre.toLowerCase().includes(query)) {
+                        card.style.display = 'flex';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+                document.getElementById('catalogo')?.scrollIntoView({ behavior: 'smooth' });
+            } else {
+                window.location.href = '/#catalogo?q=' + encodeURIComponent(query);
+            }
+        }
+
+        function limpiarBuscadorNav() {
+            const input = document.getElementById('nav-search-input');
+            if (input) {
+                input.value = '';
+                document.getElementById('clear-search-btn')?.classList.add('hidden');
+                const productos = document.querySelectorAll('.producto-card');
+                productos.forEach(card => card.style.display = 'flex');
+            }
+        }
+    </script>
+
+    <!-- BANNERS PROMOCIONALES FLOTANTES Y ARRASTRABLES -->
+    {% if banners_promos %}
+    <div id="banners-flotantes-container">
+        {% for banner in banners_promos %}
+        <div class="banner-draggable fixed z-50 cursor-move select-none shadow-2xl" style="right: 20px;" data-banner-id="{{ banner.id }}">
+            <div class="bg-white/95 backdrop-blur-md rounded-2xl border-2 border-mk-pink p-2.5 max-w-[260px] sm:max-w-[300px] relative group shadow-xl">
+                
+                <button onclick="this.closest('.banner-draggable').style.display='none'" class="absolute -top-2.5 -right-2.5 bg-mk-dark text-white rounded-full w-6 h-6 flex items-center justify-center text-xs shadow hover:bg-mk-deep transition z-10" title="Cerrar oferta">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+
+                <div class="text-[9px] uppercase tracking-widest text-gray-400 text-center mb-1 font-bold flex items-center justify-center gap-1 cursor-grab active:cursor-grabbing">
+                    <i class="fa-solid fa-grip-lines"></i> Mover Banner
+                </div>
+
+                <div class="rounded-xl overflow-hidden shadow-inner bg-black/5 relative aspect-video">
+                    {% if banner.enlace_url %}
+                    <a href="{{ banner.enlace_url }}" target="_blank" class="block w-full h-full">
+                    {% endif %}
+                    
+                    {% if banner.tipo_media == 'video' %}
+                    <video src="{{ banner.media_url }}" autoplay muted loop playsinline class="w-full h-full object-cover"></video>
+                    {% else %}
+                    <img src="{{ banner.media_url }}" alt="{{ banner.titulo or 'Promoción' }}" class="w-full h-full object-cover">
+                    {% endif %}
+
+                    {% if banner.enlace_url %}
+                    </a>
+                    {% endif %}
+                </div>
+
+                {% if banner.titulo %}
+                <div class="mt-2 text-center">
+                    <span class="font-serif-mk text-xs font-bold text-mk-dark block truncate">{{ banner.titulo }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const banners = document.querySelectorAll('.banner-draggable');
+
+            banners.forEach((banner, index) => {
+                const bottomOffset = 20 + (index * 190);
+                banner.style.bottom = bottomOffset + 'px';
+
+                let isDragging = false;
+                let startX, startY, initialX, initialY;
+
+                const dragStart = (e) => {
+                    isDragging = true;
+                    const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+                    const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+                    
+                    startX = clientX;
+                    startY = clientY;
+                    
+                    const rect = banner.getBoundingClientRect();
+                    initialX = rect.left;
+                    initialY = rect.top;
+
+                    banner.style.bottom = 'auto';
+                    banner.style.right = 'auto';
+                    banner.style.left = `${initialX}px`;
+                    banner.style.top = `${initialY}px`;
+                    
+                    e.stopPropagation();
+                };
+
+                const dragMove = (e) => {
+                    if (!isDragging) return;
+                    const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+                    const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+
+                    const dx = clientX - startX;
+                    const dy = clientY - startY;
+
+                    banner.style.left = `${initialX + dx}px`;
+                    banner.style.top = `${initialY + dy}px`;
+                    
+                    e.preventDefault();
+                };
+
+                const dragEnd = () => {
+                    isDragging = false;
+                };
+
+                banner.addEventListener('mousedown', dragStart);
+                window.addEventListener('mousemove', dragMove);
+                window.addEventListener('mouseup', dragEnd);
+
+                banner.addEventListener('touchstart', dragStart, {passive: false});
+                window.addEventListener('touchmove', dragMove, {passive: false});
+                window.addEventListener('touchend', dragEnd);
+            });
+        });
+    </script>
+    {% endif %}
+
+    <!-- BANNER SKYSCRAPER FLOTANTE IZQUIERDO -->
+    {% if skyscraper %}
+    <aside id="skyscraper-banner" class="hidden xl:block fixed left-5 top-32 z-40 w-52 transition-all duration-500 ease-in-out hover:scale-[1.01]">
+        <div class="relative bg-white/95 backdrop-blur-md rounded-3xl border-2 border-mk-rosaviejo/50 shadow-2xl overflow-hidden group">
+            
+            <button onclick="document.getElementById('skyscraper-banner').style.display='none'; document.getElementById('main-content')?.classList.remove('xl:pl-60'); document.getElementById('carousel-container')?.classList.remove('xl:pl-60');" 
+                    class="absolute top-2.5 right-2.5 bg-mk-dark/80 hover:bg-mk-deep text-white w-6 h-6 rounded-full flex items-center justify-center text-[10px] shadow-md z-20 transition" title="Cerrar banner">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            {% set msj_wa = "Hola Analía, vi la promoción en la web '" ~ (skyscraper.texto_vertical or skyscraper.titulo or "Promoción Especial") ~ "' y me gustaría recibir asesoramiento personalizado sobre los productos incluidos." %}
+            {% set url_wa_sk = skyscraper.enlace_url if skyscraper.enlace_url else "https://wa.me/5492616142896?text=" ~ msj_wa|urlencode %}
+
+            <a href="{{ url_wa_sk }}" target="_blank" rel="noopener noreferrer" class="block w-full h-full">
+                <div class="relative w-full h-[540px] overflow-hidden bg-white flex items-center justify-center">
+                    <img src="{{ skyscraper.media_url }}" alt="Publicidad Skyscraper" class="w-full h-full object-contain group-hover:scale-105 transition duration-700">
+                    <div class="absolute inset-0 bg-gradient-to-t from-mk-dark/95 via-mk-dark/40 to-transparent pointer-events-none"></div>
+                    <div class="absolute bottom-4 left-3 right-3 z-10 space-y-2 text-center">
+                        {% if skyscraper.texto_vertical %}
+                        <span class="inline-block bg-mk-pink text-mk-dark text-[10px] font-bold py-1 px-3 rounded-lg shadow-md uppercase tracking-wider border border-white/30">
+                            {{ skyscraper.texto_vertical }}
+                        </span>
+                        {% endif %}
+                        {% if skyscraper.titulo %}
+                        <h4 class="font-serif-mk font-bold text-xs text-white tracking-wide uppercase line-clamp-1 drop-shadow-md">
+                            {{ skyscraper.titulo }}
+                        </h4>
+                        {% endif %}
+                        <span class="inline-flex items-center justify-center w-full py-2.5 px-3 bg-green-600 hover:bg-green-700 text-white text-[11px] font-bold rounded-xl shadow-lg backdrop-blur-md transition transform group-hover:scale-[1.03]">
+                            <i class="fa-brands fa-whatsapp text-sm mr-1.5"></i> Consultar Promoción
+                        </span>
+                    </div>
+                </div>
+            </a>
+
+        </div>
+    </aside>
+    {% endif %}
+
+    <!-- Contenido Principal -->
+    <main id="main-content" class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 {% if skyscraper %}xl:pl-60{% endif %}">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- CARRUSEL FLOTANTE SOBRE EL FOOTER -->
+    {% if carrusel_items %}
+    <div id="carousel-container" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mb-10 relative z-20 {% if skyscraper %}xl:pl-60{% endif %}">
+        <div class="bg-white/90 backdrop-blur-md rounded-3xl p-6 shadow-2xl border border-mk-lightpink transform hover:-translate-y-1 transition duration-500">
+            <div class="flex justify-between items-center mb-4 px-2">
+                <span class="text-xs font-bold text-mk-deep uppercase tracking-widest">
+                    <i class="fa-solid fa-images mr-1"></i> Galería Exclusiva
+                </span>
+                <span class="text-[10px] text-gray-400">Desliza para explorar &bull; Mary Kay Experience</span>
+            </div>
+
+            <div class="relative overflow-hidden rounded-2xl cursor-grab active:cursor-grabbing select-none">
+                <div id="carrusel-track" class="flex gap-4 touch-pan-y">
+                    {% for item in carrusel_items %}
+                    <div class="min-w-[280px] sm:min-w-[320px] md:min-w-[380px] h-48 md:h-56 flex-shrink-0 rounded-2xl overflow-hidden shadow-md relative group pointer-events-none sm:pointer-events-auto">
+                        <img src="{{ item.imagen_url }}" alt="{{ item.titulo or 'Mary Kay' }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500" draggable="false">
+                        {% if item.titulo %}
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-end p-4">
+                            <span class="text-white text-xs font-bold tracking-wide">{{ item.titulo }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const track = document.getElementById('carrusel-track');
+            if (!track) return;
+            
+            const originalItems = Array.from(track.children);
+            originalItems.forEach(item => {
+                const clone = item.cloneNode(true);
+                track.appendChild(clone);
+            });
+
+            let position = 0;
+            const speed = 0.8; 
+            let isPaused = false;
+            let isDragging = false;
+            let startX = 0;
+            let scrollStartPos = 0;
+
+            function animateCarrusel() {
+                if (!isPaused && !isDragging) {
+                    position -= speed;
+                    const halfWidth = track.scrollWidth / 2;
+                    if (Math.abs(position) >= halfWidth) {
+                        position = 0;
+                    }
+                    track.style.transform = `translateX(${position}px)`;
+                }
+                requestAnimationFrame(animateCarrusel);
+            }
+
+            const startDrag = (clientX) => {
+                isDragging = true;
+                startX = clientX;
+                scrollStartPos = position;
+                track.parentElement.classList.add('cursor-grabbing');
+            };
+
+            const moveDrag = (clientX) => {
+                if (!isDragging) return;
+                const deltaX = clientX - startX;
+                position = scrollStartPos + deltaX;
+                
+                const halfWidth = track.scrollWidth / 2;
+                if (position > 0) {
+                    position = -halfWidth + position;
+                } else if (Math.abs(position) >= halfWidth) {
+                    position = position + halfWidth;
+                }
+                
+                track.style.transform = `translateX(${position}px)`;
+            };
+
+            const endDrag = () => {
+                if (!isDragging) return;
+                isDragging = false;
+                track.parentElement.classList.remove('cursor-grabbing');
+            };
+
+            track.addEventListener('mousedown', (e) => { startDrag(e.clientX); e.preventDefault(); });
+            window.addEventListener('mousemove', (e) => { moveDrag(e.clientX); });
+            window.addEventListener('mouseup', () => { endDrag(); });
+
+            track.addEventListener('touchstart', (e) => { if (e.touches.length > 0) startDrag(e.touches[0].clientX); });
+            window.addEventListener('touchmove', (e) => { if (isDragging && e.touches.length > 0) moveDrag(e.touches[0].clientX); });
+            window.addEventListener('touchend', () => { endDrag(); });
+
+            track.addEventListener('mouseenter', () => { if (!isDragging) isPaused = true; });
+            track.addEventListener('mouseleave', () => { if (!isDragging) isPaused = false; });
+
+            requestAnimationFrame(animateCarrusel);
+        });
+    </script>
+
+    <!-- Footer Interactivo y Profesional -->
+    <footer class="bg-mk-dark text-white border-t-4 border-mk-pink mt-16 pt-12 pb-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 pb-12 border-b border-white/10">
+                <div class="space-y-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 rounded-full bg-mk-pink/20 flex items-center justify-center text-mk-pink font-bold font-serif-mk">MK</div>
+                        <h3 class="font-serif-mk text-lg font-bold tracking-wide">Consultora Mary Kay</h3>
+                    </div>
+                    <p class="text-xs text-gray-300 leading-relaxed">
+                        <strong class="text-white">Analía A. Domínguez</strong><br>
+                        Asesoramiento personalizado en cuidado de la piel y cosmética profesional.
+                    </p>
+                    <div class="text-xs text-gray-400 space-y-1">
+                        <p><i class="fa-solid fa-location-dot text-mk-pink mr-2"></i> Luján de Cuyo, Mendoza, Argentina</p>
+                        <p><i class="fa-solid fa-envelope text-mk-pink mr-2"></i> analia.alejandra74@gmail.com</p>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <h3 class="font-serif-mk text-lg font-bold tracking-wide border-b border-mk-pink/30 pb-2 inline-block">Síguenos & Contacto</h3>
+                    <p class="text-xs text-gray-300">Conéctate en nuestras redes sociales para conocer las últimas tendencias.</p>
+                    <div class="flex items-center space-x-4 pt-2">
+                        <a href="https://www.instagram.com" target="_blank" rel="noopener noreferrer" class="w-10 h-10 rounded-full bg-white/10 hover:bg-mk-pink hover:text-mk-dark flex items-center justify-center text-lg transition duration-300 transform hover:-translate-y-1 shadow-md"><i class="fa-brands fa-instagram"></i></a>
+                        <a href="https://www.facebook.com" target="_blank" rel="noopener noreferrer" class="w-10 h-10 rounded-full bg-white/10 hover:bg-blue-600 hover:text-white flex items-center justify-center text-lg transition duration-300 transform hover:-translate-y-1 shadow-md"><i class="fa-brands fa-facebook-f"></i></a>
+                        <a href="https://wa.me/5492616142896" target="_blank" rel="noopener noreferrer" class="w-10 h-10 rounded-full bg-white/10 hover:bg-green-500 hover:text-white flex items-center justify-center text-lg transition duration-300 transform hover:-translate-y-1 shadow-md"><i class="fa-brands fa-whatsapp"></i></a>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <h3 class="font-serif-mk text-lg font-bold tracking-wide border-b border-mk-pink/30 pb-2 inline-block">Formas de Pago & Envíos</h3>
+                    <p class="text-xs text-gray-300">Pagos 100% seguros y envíos garantizados a todo el país.</p>
+                    <div class="space-y-2">
+                        <div class="flex items-center space-x-3 text-xs bg-white/5 p-2.5 rounded-xl border border-white/10">
+                            <i class="fa-solid fa-money-bill-transfer text-mk-pink text-base"></i>
+                            <div>
+                                <span class="font-bold block text-white">Transferencia Bancaria</span>
+                                
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-3 text-xs bg-white/5 p-2.5 rounded-xl border border-white/10">
+                            <i class="fa-solid fa-credit-card text-blue-400 text-base"></i>
+                            <div><span class="font-bold block text-white">Mercado Pago</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-6 flex flex-col sm:flex-row justify-between items-center text-[11px] text-gray-400 gap-2">
+                <p>&copy; 2026 Mary Kay Beauty Store - Analía A. Domínguez. Todos los derechos reservados.</p>
+                <p class="text-gray-500">Mendoza, Argentina</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Panel Admin - Blog | BEAUTY STORE{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border border-mk-lightpink p-6 md:p-8">
+    <div class="flex justify-between items-center mb-6 border-b pb-4">
+        <h1 class="font-serif-mk text-2xl font-bold text-mk-dark">Gestión de Publicaciones del Blog</h1>
+        <div class="space-x-3">
+            <a href="/admin/pedidos" class="text-xs bg-mk-lightpink text-mk-deep px-4 py-2 rounded-xl font-bold hover:bg-mk-pink hover:text-white transition">Ver Pedidos</a>
+            <a href="/admin/productos" class="text-xs bg-mk-lightpink text-mk-deep px-4 py-2 rounded-xl font-bold hover:bg-mk-pink hover:text-white transition">Productos</a>
+        </div>
+    </div>
+
+    <!-- Formulario para Crear Publicación -->
+    <form action="/admin/blog/crear" method="POST" class="bg-mk-softgray p-6 rounded-xl border border-mk-lightpink mb-8 space-y-4">
+        <h3 class="font-bold text-sm text-mk-dark uppercase tracking-wide">Nueva Publicación / Artículo</h3>
+        <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Título del Artículo</label>
+            <input type="text" name="titulo" required class="w-full text-xs p-3 rounded-lg border border-gray-200 focus:border-mk-pink focus:outline-none bg-white">
+        </div>
+        <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Subtítulo o Resumen Corto</label>
+            <input type="text" name="subtitulo" class="w-full text-xs p-3 rounded-lg border border-gray-200 focus:border-mk-pink focus:outline-none bg-white">
+        </div>
+        <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">URL de la Imagen Principal</label>
+            <input type="text" name="imagen_url" placeholder="/static/imagen.jpg o enlace web" class="w-full text-xs p-3 rounded-lg border border-gray-200 focus:border-mk-pink focus:outline-none bg-white">
+        </div>
+        <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Contenido Completo</label>
+            <textarea name="contenido" rows="5" required class="w-full text-xs p-3 rounded-lg border border-gray-200 focus:border-mk-pink focus:outline-none bg-white"></textarea>
+        </div>
+        <button type="submit" class="w-full bg-mk-dark hover:bg-mk-deep text-white font-bold py-3 rounded-xl transition text-xs shadow-md">
+            Publicar Artículo
+        </button>
+    </form>
+
+    <!-- Listado de Artículos Existentes -->
+    <h3 class="font-bold text-sm text-mk-dark uppercase tracking-wide mb-4">Artículos Publicados</h3>
+    <div class="space-y-3">
+        {% for post in posts %}
+        <div class="flex items-center justify-between p-4 bg-mk-softgray rounded-xl border border-mk-lightpink">
+            <div class="flex items-center space-x-4">
+                {% if post.imagen_url %}
+                <img src="{{ post.imagen_url }}" class="w-12 h-12 object-cover rounded-lg border">
+                {% endif %}
+                <div>
+                    <h4 class="font-bold text-sm text-mk-dark">{{ post.titulo }}</h4>
+                    <p class="text-xs text-gray-500">{{ post.fecha.strftime('%d/%m/%Y') if post.fecha else '' }}</p>
+                </div>
+            </div>
+            <a href="/blog/{{ post.id }}" target="_blank" class="text-xs font-bold text-mk-deep hover:underline">Ver &rarr;</a>
+        </div>
+        {% else %}
+        <p class="text-center text-gray-500 py-6 text-xs">No hay artículos cargados todavía.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

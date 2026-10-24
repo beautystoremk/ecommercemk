@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% block title %}{{ producto.nombre }} | BEAUTY STORE | Mary Kay{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto my-8 px-4 space-y-8">
+    
+    <!-- Botón volver al catálogo -->
+    <div>
+        <a href="/" class="inline-flex items-center gap-2 bg-[#a81c4e] hover:bg-[#891440] text-white px-4 py-2 rounded-xl text-xs font-bold transition shadow-sm">
+            <i class="fa-solid fa-arrow-left"></i> Volver al Catálogo
+        </a>
+    </div>
+
+    <!-- DETALLE DEL PRODUCTO -->
+    <div class="bg-white rounded-2xl shadow-sm border border-mk-lightpink p-6 md:p-10">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+            <div class="flex flex-col items-center">
+                <div class="w-full h-80 md:h-96 bg-mk-softgray rounded-xl overflow-hidden flex items-center justify-center p-4 border border-mk-lightpink relative">
+                    <img src="{{ producto.imagen_url }}" alt="{{ producto.nombre }}" class="max-h-full object-contain hover:scale-105 transition duration-300">
+                    {% if producto.descuento_porcentaje and producto.descuento_porcentaje > 0 %}
+                    <span class="absolute top-4 left-4 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md animate-pulse">
+                        {{ producto.descuento_porcentaje }}% OFF
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="flex flex-col justify-between">
+                <div>
+                    <span class="text-xs uppercase font-bold tracking-widest text-mk-deep bg-mk-lightpink px-3 py-1 rounded-full">Edición Exclusiva</span>
+                    <h1 class="font-serif-mk text-3xl md:text-4xl font-bold text-mk-dark mt-3">{{ producto.nombre }}</h1>
+                    
+                    <!-- PROMEDIO DE ESTRELLAS -->
+                    <div class="flex items-center gap-2 mt-2">
+                        <div class="flex text-yellow-400 text-xs">
+                            {% for i in range(1, 6) %}
+                                {% if i <= promedio_estrellas %}
+                                    <i class="fa-solid fa-star"></i>
+                                {% else %}
+                                    <i class="fa-regular fa-star text-gray-300"></i>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        <span class="text-xs font-bold text-mk-dark">{{ promedio_estrellas }}</span>
+                        <span class="text-xs text-gray-400">({{ total_resenas }} opiniones)</span>
+                    </div>
+
+                    <p class="text-gray-600 text-sm mt-3 leading-relaxed">{{ producto.descripcion }}</p>
+
+                    <div class="my-6 p-4 bg-mk-softgray rounded-xl border-l-4 border-mk-pink">
+                        <div class="flex items-baseline space-x-3">
+                            {% if producto.descuento_porcentaje and producto.descuento_porcentaje > 0 %}
+                                {% set precio_oferta = producto.precio * (1 - producto.descuento_porcentaje / 100) %}
+                                <span class="text-3xl font-bold text-mk-dark">${{ "{:,.2f}".format(precio_oferta) }}</span>
+                                <span class="text-sm text-gray-400 line-through">${{ "{:,.2f}".format(producto.precio) }}</span>
+                                <span class="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full uppercase">
+                                    {{ producto.descuento_porcentaje }}% OFF
+                                </span>
+                            {% else %}
+                                <span class="text-3xl font-bold text-mk-dark">${{ "{:,.2f}".format(producto.precio) }}</span>
+                                <span class="text-xs text-gray-500">Precio Regular</span>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- LEYENDA CONDICIONAL: Solo se muestra si el descuento por transferencia está ACTIVO en Admin -->
+                        {% if datos_transferencia and datos_transferencia['transferencia_activo'] %}
+                        <div class="mt-2 flex items-center text-mk-deep font-semibold text-sm">
+                            <i class="fa-solid fa-tags mr-2"></i>
+                            <span>${{ "{:,.2f}".format(precio_transferencia) }} pagando por Transferencia Bancaria ({{ datos_transferencia['descuento_porcentaje'] }}% OFF)</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- VALIDEZ DE STOCK Y BOTÓN DE COMPRA -->
+                {% if producto.stock > 0 %}
+                <div class="space-y-4 border-t border-gray-100 pt-6">
+                    <div class="flex items-center space-x-4">
+                        <label class="text-xs font-bold text-mk-dark uppercase">Cantidad:</label>
+                        <input type="number" id="cantidad-input" value="1" min="1" max="{{ producto.stock }}" class="w-20 text-center text-xs p-2.5 rounded-lg border border-gray-200 focus:border-mk-pink focus:outline-none font-bold">
+                        <span class="text-xs text-green-600 font-bold">({{ producto.stock }} disponibles)</span>
+                    </div>
+
+                    <button type="button" 
+                            onclick="addToCartFromDetail(this)" 
+                            data-id="{{ producto.id }}"
+                            data-nombre='{{ producto.nombre | tojson }}'
+                            data-precio="{{ producto.precio }}"
+                            data-descuento="{{ producto.descuento_porcentaje or 0 }}"
+                            data-imagen='{{ producto.imagen_url | tojson }}'
+                            data-stock="{{ producto.stock }}"
+                            class="w-full bg-[#a81c4e] hover:bg-[#891440] text-white font-bold py-4 rounded-xl transition duration-300 shadow-md flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-cart-plus"></i>
+                        <span>Agregar al Carrito</span>
+                    </button>
+                    
+                    <a href="https://wa.me/5492616142896?text=Hola!%20Quiero%20consultar%20sobre%20el%20producto:%20{{ producto.nombre }}" target="_blank" class="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-xl font-bold text-xs transition flex items-center justify-center gap-2 shadow-sm">
+                        <i class="fa-brands fa-whatsapp text-sm"></i> Consultar por WhatsApp
+                    </a>
+                </div>
+                {% else %}
+                <div class="space-y-4 border-t border-gray-100 pt-6">
+                    <span class="bg-red-100 text-red-700 text-xs font-bold px-4 py-3 rounded-xl block border border-red-200 text-center">
+                        <i class="fa-solid fa-triangle-exclamation mr-1"></i> Producto Agotado (Sin Stock)
+                    </span>
+                    <button disabled class="w-full bg-gray-200 text-gray-400 font-bold py-4 rounded-xl cursor-not-allowed flex items-center justify-center space-x-2 text-xs">
+                        <i class="fa-solid fa-ban"></i>
+                        <span>Sin Stock Disponible</span>
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- SECCIÓN DE RESEÑAS Y OPINIONES -->
+    <div class="bg-white rounded-2xl shadow-sm border border-mk-lightpink p-6 md:p-10">
+        <h3 class="font-serif-mk text-xl font-bold text-mk-dark mb-6">Opiniones y Calificaciones</h3>
+
+        <!-- RESUMEN DE PUNTUACIÓN -->
+        <div class="flex flex-col sm:flex-row items-center gap-6 mb-8 p-4 bg-mk-softgray rounded-xl">
+            <div class="text-center sm:pr-6 sm:border-r border-gray-200">
+                <span class="text-4xl font-bold text-mk-dark">{{ promedio_estrellas }}</span>
+                <span class="text-xs text-gray-500 block mt-1">de 5 estrellas</span>
+            </div>
+            <div>
+                <div class="flex text-yellow-400 text-base justify-center sm:justify-start">
+                    {% for i in range(1, 6) %}
+                        {% if i <= promedio_estrellas %}
+                            <i class="fa-solid fa-star"></i>
+                        {% else %}
+                            <i class="fa-regular fa-star text-gray-300"></i>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                <span class="text-xs text-gray-500 mt-1 block text-center sm:text-left">Basado en {{ total_resenas }} opiniones verificadas</span>
+            </div>
+        </div>
+
+        <!-- LISTA DE RESEÑAS PUBLICADAS -->
+        {% if resenas %}
+        <div class="space-y-4 mb-8">
+            {% for r in resenas %}
+            <div class="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="font-bold text-xs text-mk-dark">{{ r.nombre_cliente }}</span>
+                    <span class="text-[10px] text-gray-400">{{ r.fecha.strftime('%d/%m/%Y') if r.fecha else '' }}</span>
+                </div>
+                <div class="flex text-yellow-400 text-xs mb-2">
+                    {% for i in range(1, 6) %}
+                        {% if i <= r.calificacion %}
+                            <i class="fa-solid fa-star"></i>
+                        {% else %}
+                            <i class="fa-regular fa-star text-gray-200"></i>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                <p class="text-xs text-gray-600 leading-relaxed">{{ r.comentario }}</p>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-xs text-gray-500 mb-8 italic text-center py-4 bg-gray-50 rounded-xl">Este producto aún no tiene opiniones. ¡Sé la primera en dejar tu reseña!</p>
+        {% endif %}
+
+        <!-- FORMULARIO PARA DEJAR UNA OPINIÓN -->
+        <div class="border-t border-gray-100 pt-6">
+            <h4 class="font-bold text-xs text-mk-dark uppercase mb-4 tracking-wide">Deja tu opinión sobre este producto</h4>
+            <form action="/producto/{{ producto.id }}/resena" method="POST" class="space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Tu Nombre</label>
+                        <input type="text" name="nombre_cliente" required placeholder="Ej: María Giménez" class="w-full text-xs p-3 rounded-xl border border-gray-200 focus:border-mk-pink focus:outline-none bg-white">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Calificación</label>
+                        <select name="calificacion" required class="w-full text-xs p-3 rounded-xl border border-gray-200 focus:border-mk-pink focus:outline-none bg-white">
+                            <option value="5">⭐⭐⭐⭐⭐ (5/5 - Excelente)</option>
+                            <option value="4">⭐⭐⭐⭐ (4/5 - Muy Bueno)</option>
+                            <option value="3">⭐⭐⭐ (3/5 - Bueno)</option>
+                            <option value="2">⭐⭐ (2/5 - Regular)</option>
+                            <option value="1">⭐ (1/5 - Malo)</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Tu Comentario</label>
+                    <textarea name="comentario" rows="3" required placeholder="¿Qué te pareció este producto? Cuéntanos tu experiencia..." class="w-full text-xs p-3 rounded-xl border border-gray-200 focus:border-mk-pink focus:outline-none bg-white"></textarea>
+                </div>
+                <button type="submit" class="bg-[#a81c4e] hover:bg-[#891440] text-white px-6 py-3 rounded-xl font-bold text-xs transition shadow-sm">
+                    Enviar Opinión
+                </button>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function addToCartFromDetail(button) {
+        const cantInput = document.getElementById('cantidad-input');
+        const cantidad = parseInt(cantInput ? cantInput.value : 1) || 1;
+        const stockMaximo = parseInt(button.getAttribute('data-stock')) || 0;
+        const precioBase = parseFloat(button.getAttribute('data-precio')) || 0;
+        const descuento = parseFloat(button.getAttribute('data-descuento')) || 0;
+        
+        // Calcular el precio real con el descuento directo del producto
+        const precioFinal = descuento > 0 ? precioBase * (1 - descuento / 100) : precioBase;
+
+        if (stockMaximo <= 0) {
+            alert("Lo sentimos, este producto se encuentra agotado.");
+            return;
+        }
+        
+        const productoObj = {
+            id: parseInt(button.getAttribute('data-id')),
+            nombre: JSON.parse(button.getAttribute('data-nombre')),
+            precio: precioFinal,
+            imagen_url: JSON.parse(button.getAttribute('data-imagen')),
+            stock: stockMaximo,
+            cantidad: cantidad
+        };
+
+        let cart = [];
+        try {
+            cart = JSON.parse(localStorage.getItem('cart')) || [];
+        } catch (e) {
+            cart = [];
+        }
+
+        let existingIndex = cart.findIndex(item => item.id === productoObj.id);
+        let cantidadActualEnCarrito = existingIndex > -1 ? cart[existingIndex].cantidad : 0;
+
+        if ((cantidadActualEnCarrito + productoObj.cantidad) > stockMaximo) {
+            alert(`No puedes agregar esa cantidad. El stock máximo disponible para este producto es de ${stockMaximo} unidades (ya tienes ${cantidadActualEnCarrito} en tu carrito).`);
+            return;
+        }
+
+        if (existingIndex > -1) {
+            cart[existingIndex].cantidad += productoObj.cantidad;
+        } else {
+            cart.push(productoObj);
+        }
+
+        localStorage.setItem('cart', JSON.stringify(cart));
+        
+        if (typeof updateCartCounter === 'function') {
+            updateCartCounter();
+        }
+
+        window.location.href = '/carrito';
+    }
+</script>
+{% endblock %}

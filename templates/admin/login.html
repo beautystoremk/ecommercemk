@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso Privado | Administración</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        mk: { 
+                            pink: '#E89DA2', 
+                            lightpink: '#FDEEEF', 
+                            deep: '#D81B60', 
+                            dark: '#1A1A1A', 
+                            softgray: '#F9F6F0' 
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-mk-softgray min-h-screen flex items-center justify-center p-4">
+
+    <div class="max-w-md w-full bg-white rounded-2xl shadow-md border border-mk-lightpink p-8">
+        <div class="text-center mb-6">
+            <span class="text-xs uppercase font-bold tracking-widest text-mk-deep bg-mk-lightpink px-3 py-1 rounded-full">Acceso Restringido</span>
+            <h1 class="text-2xl font-bold text-mk-dark mt-3">Panel de Control</h1>
+            <p class="text-xs text-gray-500 mt-1">Inicia sesión para gestionar pedidos y despachos</p>
+        </div>
+
+        {% if error %}
+        <div class="bg-red-50 border border-red-200 text-red-700 text-xs p-3 rounded-lg mb-4 text-center font-medium">
+            {{ error }}
+        </div>
+        {% endif %}
+
+        <form action="/admin/login" method="POST" class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-mk-dark uppercase mb-1">Usuario</label>
+                <input type="text" name="username" required class="w-full text-xs p-3 rounded-lg border border-gray-200 focus:border-mk-pink focus:outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-mk-dark uppercase mb-1">Contraseña</label>
+                <input type="password" name="password" required class="w-full text-xs p-3 rounded-lg border border-gray-200 focus:border-mk-pink focus:outline-none">
+            </div>
+            <button type="submit" class="w-full bg-mk-dark hover:bg-mk-deep text-white text-xs font-bold py-3 rounded-xl transition duration-300">
+                Ingresar al Sistema
+            </button>
+        </form>
+    </div>
+
+</body>
+</html>

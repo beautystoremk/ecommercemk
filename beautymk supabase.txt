@@ -1,0 +1,101 @@
+configurar envió mail al correo
+
+supabase: itecratecnica
+username:  beautystoremk
+
+credenciales:
+passw: beautystoremk2026
+SQLALCHEMY_DATABASE_URL = "postgresql://postgres.ennfuhqoqxroelcfklnk:beautystoremk2026@aws-1-us-west-2.pooler.supabase.com:6543/postgres"
+
+contraseña aplicación Gmail:  tirg degu blon vsei
+
+PAGOS CON MERCADO PAGO
+
+Paso 3: Configurar el Webhook en el panel de Mercado Pago
+Para que Mercado Pago sepa a dónde enviar estas alertas cuando tu web esté publicada en internet:
+
+Ingresa a tu cuenta de desarrollador en Mercado Pago Developers.
+
+Ve a la sección de Tus Integraciones / Webhooks (Notificaciones Web).
+
+Configura la URL de producción de tu servidor (por ejemplo: [https://tu-dominio.com/webhook/mercadopago](https://tu-dominio.com/webhook/mercadopago)).
+
+Selecciona el evento Pagos (payment) para que te notifique cada vez que ocurra una transacción.
+
+(Nota para desarrollo local: Mientras estés programando en tu PC con localhost, Mercado Pago no puede enviar webhooks directamente a tu computadora a menos que uses una herramienta de túnel como ngrok. Sin embargo, una vez que subas la aplicación a tu servidor web definitivo, funcionará de manera totalmente autónoma).
+-------------------------------------------------------------------------------------------
+
+Para que el dinero de las ventas con Mercado Pago vaya directamente a tu cuenta de Mercado Pago (la de Analía) y el cliente vea el monto exacto de su pedido en una pasarela de pago oficial y segura, debes configurar tus Credenciales de Producción en el código.
+
+Aquí tienes el paso a paso exacto de cómo funciona y qué debes hacer:
+
+Paso 1: Obtener tu Credencial (Access Token) de Producción en Mercado Pago
+Para que las ventas sean reales y el dinero se acredite en tu cuenta, necesitas tu token personal:
+
+Inicia sesión en tu cuenta de Mercado Pago.
+
+Ve al panel de desarrolladores o ingresa directamente a Mercado Pago Developers - Tus Integraciones.
+
+Si no tienes una aplicación creada, crea una nueva (ej: "Beauty Store Web").
+
+Entra a tu aplicación y busca la sección de Credenciales.
+
+Selecciona las Credenciales de Producción (las que son para dinero real, no las de prueba/test).
+
+Copia el Access Token (comienza generalmente con APP_USR-...).
+
+Paso 2: Configurar tu Token en main.py
+Abre tu archivo main.py y busca la línea donde se inicializa el SDK de Mercado Pago (alrededor de la línea 125):
+
+Python
+mp_sdk = mercadopago.SDK("PROD_ACCESS_TOKEN_MERCADOPAGO")
+Reemplaza "PROD_ACCESS_TOKEN_MERCADOPAGO" por tu Access Token real entre comillas:
+
+Python
+mp_sdk = mercadopago.SDK("APP_USR-tu-token-real-de-produccion-aqui...")
+Paso 3: ¿Qué experimenta el cliente al pagar?
+Cuando un cliente entra a tu tienda web (/carrito), completa sus datos, elige Mercado Pago como método de pago y hace clic en finalizar compra:
+
+Redirección automática: Tu sistema FastAPI genera la preferencia de pago de forma dinámica con el precio total exacto (productos + costo de envío de su provincia) y lo redirige de forma segura a la plataforma oficial de Mercado Pago.
+
+Pantalla de pago: El cliente verá en la pantalla de Mercado Pago:
+
+El concepto: Compra Online - Pedido #[ID] (Incluye Envío)
+
+El monto final exacto en pesos argentinos (ARS).
+
+Medios de pago disponibles: El cliente podrá elegir pagar con:
+
+Dinero en su cuenta de Mercado Pago.
+
+Tarjetas de crédito o débito guardadas o nuevas.
+
+Medios en efectivo (Rapipago / Pago Fácil) si están habilitados en tu cuenta.
+
+Paso 4: ¿Qué pasa con el dinero para el vendedor (tú)?
+Acreditación en tu cuenta: Tan pronto como el cliente completa el pago exitosamente en la pasarela de Mercado Pago, el dinero se transfiere y acredita automáticamente en tu cuenta de Mercado Pago (según los plazos y comisiones que maneje tu cuenta).
+
+Notificación en tu celular: Te llegará una notificación instantánea a la aplicación de Mercado Pago en tu teléfono indicando que recibiste un pago.
+
+Actualización de la tienda:
+
+Si configuraste el Webhook (del paso anterior) o cuando el cliente hace clic en "Volver al sitio", tu sistema cambiará el estado del pedido a "Aprobado" en tu panel de administración.
+
+Además, recuerda que ya tienes configurado el envío automático de correos tanto a tu Gmail personal como al correo del cliente con el detalle de la compra.
+
+-------------------------------------------------------------------------------
+
+claves token mercado pago prueba
+
+Public Key
+APP_USR-9a6a352a-341c-4147-ad68-55984642f6b6
+Access Token
+APP_USR-789554964795867-102019-95e7ff87beb1fd85a70d4ea6575d3746-3778262597
+---------------------------------------------------------------------------------
+claves token mercado pago producción
+
+Public Key
+APP_USR-8b6336b0-78cd-4d98-b74f-cc500aae66be
+Access Token
+APP_USR-7534685542901456-102019-de863ce707ea2161eab7caeaa91e7029-586616617
+

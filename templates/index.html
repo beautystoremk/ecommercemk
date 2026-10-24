@@ -1,0 +1,472 @@
+{% extends "base.html" %}
+
+{% block title %}Inicio & Catálogo | BEAUTY STORE - Carrodilla - Mza{% endblock %}
+
+{% block content %}
+<!-- SECCIÓN HERO INTERACTIVA CON VIDEO -->
+<div class="relative rounded-3xl overflow-hidden mb-16 shadow-2xl bg-mk-dark text-white p-8 md:p-20 flex items-center justify-center text-center">
+    <!-- Video de Fondo -->
+    <video autoplay muted loop playsinline class="absolute inset-0 w-full h-full object-cover opacity-35 pointer-events-none transition-all duration-700">
+        <source src="https://ennfuhqoqxroelcfklnk.supabase.co/storage/v1/object/public/media/uploads/mary-kay.mp4" type="video/mp4">
+    </video>
+
+    <!-- Superposición elegante en degradé -->
+    <div class="absolute inset-0 bg-gradient-to-t from-mk-dark via-transparent to-transparent opacity-80"></div>
+
+    <div class="relative z-10 max-w-3xl space-y-6">
+        <span class="inline-block text-xs uppercase font-bold tracking-widest text-mk-pink bg-white/10 backdrop-blur-md px-5 py-2 rounded-full border border-mk-pink/30 shadow-sm animate-pulse">
+            Consultora Independiente
+        </span>
+        <h1 class="font-serif-mk text-4xl sm:text-5xl md:text-6xl font-bold tracking-wide leading-tight drop-shadow-md">
+            Siente la Magia en Tu Piel
+        </h1>
+        <p class="text-xs sm:text-sm text-gray-200 tracking-wide uppercase leading-relaxed max-w-xl mx-auto">
+            Descubre nuestra línea completa de cosmética, belleza y cuidado personal en Mendoza.
+        </p>
+        <div class="pt-4 flex flex-wrap justify-center gap-4">
+            <a href="#catalogo" class="bg-mk-rosaviejo hover:bg-mk-deep hover:text-white text-mk-dark font-bold text-xs uppercase px-8 py-3.5 rounded-full transition duration-300 shadow-lg transform hover:scale-105">
+                Explorar Catálogo
+            </a>
+            <a href="/contacto" class="bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/40 text-white font-bold text-xs uppercase px-8 py-3.5 rounded-full transition duration-300">
+                Asesoría Personalizada WP 2616142896
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- SECCIÓN: REUNIONES DE BELLEZA Y CAPACITACIONES (ESTILO EVENTBRITE / LANDING DE EVENTOS) -->
+{% if evento %}
+<section id="evento-seccion" class="mb-20 scroll-mt-28">
+    <div class="bg-gradient-to-br from-mk-dark via-gray-900 to-mk-dark text-white rounded-3xl overflow-hidden shadow-2xl border border-mk-pink/30 relative">
+        
+        <!-- Alerta flotante de éxito al inscribirse -->
+        {% if inscrito %}
+        <div class="bg-emerald-600 text-white p-4 text-center text-xs font-bold flex items-center justify-center gap-2 animate-bounce">
+            <i class="fa-solid fa-circle-check text-base"></i>
+            ¡Inscripción Confirmada! Hemos guardado tu reserva. Te contactaremos pronto por WhatsApp.
+        </div>
+        {% endif %}
+
+        <div class="p-8 md:p-12 lg:p-16 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+            
+            <!-- DETALLES DEL EVENTO (IZQUIERDA) -->
+            <div class="lg:col-span-7 space-y-6">
+                
+                <div class="flex flex-wrap items-center gap-3">
+                    <span class="bg-mk-pink text-mk-dark font-extrabold text-[11px] uppercase tracking-wider px-3.5 py-1.5 rounded-full shadow-md animate-pulse">
+                        🔥 Evento Exclusivo
+                    </span>
+                    <span class="bg-white/10 backdrop-blur-md text-gray-200 text-xs font-bold px-3 py-1.5 rounded-full border border-white/20">
+                        <i class="fa-solid fa-video mr-1 text-mk-pink"></i> {{ evento.modalidad }}
+                    </span>
+                </div>
+
+                <h2 class="font-serif-mk text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight text-white drop-shadow-sm">
+                    {{ evento.titulo }}
+                </h2>
+
+                <p class="text-xs sm:text-sm text-gray-300 leading-relaxed">
+                    {{ evento.descripcion }}
+                </p>
+
+                <!-- FECHA, LUGAR Y ORADORA -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                    <div class="bg-white/5 p-4 rounded-2xl border border-white/10 flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-xl bg-mk-pink/20 text-mk-pink flex items-center justify-center text-lg">
+                            <i class="fa-solid fa-calendar-check"></i>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-gray-400 font-bold uppercase block">Fecha & Horario</span>
+                            <span class="text-xs font-bold text-white">{{ evento.fecha_hora_texto }}</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-white/5 p-4 rounded-2xl border border-white/10 flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-xl bg-mk-pink/20 text-mk-pink flex items-center justify-center text-lg">
+                            <i class="fa-solid fa-location-dot"></i>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-gray-400 font-bold uppercase block">Lugar / Plataforma</span>
+                            <span class="text-xs font-bold text-white">{{ evento.lugar }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ORADORA / CAPACITADORA -->
+                <div class="flex items-center space-x-4 bg-white/5 p-4 rounded-2xl border border-white/10">
+                    <img src="{{ evento.oradora_foto_url }}" alt="{{ evento.oradora_nombre }}" class="w-14 h-14 rounded-full object-cover border-2 border-mk-pink shadow-md">
+                    <div>
+                        <span class="text-[10px] text-mk-pink font-bold uppercase tracking-wider block">Disertante & Capacitadora</span>
+                        <h4 class="font-serif-mk text-base font-bold text-white">{{ evento.oradora_nombre }}</h4>
+                    </div>
+                </div>
+
+                <!-- TEMARIO / LO QUE APRENDERÁS -->
+                {% if temario_lista %}
+                <div class="space-y-2 pt-2">
+                    <h4 class="text-xs font-bold text-mk-pink uppercase tracking-wider">Lo que aprenderás en esta sesión:</h4>
+                    <ul class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-gray-300">
+                        {% for item in temario_lista %}
+                        <li class="flex items-center space-x-2">
+                            <i class="fa-solid fa-sparkles text-mk-pink text-[10px]"></i>
+                            <span>{{ item }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+            </div>
+
+            <!-- CARD DE INSCRIPCIÓN Y VISOR DE CUPOS (DERECHA) -->
+            <div class="lg:col-span-5 bg-white text-mk-dark rounded-3xl p-6 md:p-8 shadow-2xl space-y-6">
+                
+                <!-- VISOR NUMÉRICO DE CUPOS DISPONIBLES EN TIEMPO REAL -->
+                <div class="space-y-2 border-b border-gray-100 pb-4">
+                    <div class="flex justify-between items-center text-xs font-bold">
+                        <span class="text-mk-deep flex items-center gap-1.5">
+                            <i class="fa-solid fa-users text-sm"></i> Asistentes Inscriptas:
+                        </span>
+                        <span class="bg-mk-softrose text-mk-deep px-3 py-1 rounded-full text-xs">
+                            {{ total_inscriptos }} / {{ evento.cupo_maximo }} lugares
+                        </span>
+                    </div>
+
+                    <!-- BARRA DE PROGRESO DE CUPOS (Sin errores CSS gracias a data-porcentaje) -->
+                    <div class="w-full bg-gray-100 h-3 rounded-full overflow-hidden">
+                        <div id="barra-progreso-evento" class="bg-gradient-to-r from-mk-pink to-mk-deep h-full transition-all duration-1000" data-porcentaje="{{ porcentaje_lleno }}"></div>
+                    </div>
+
+                    <p class="text-[11px] text-right text-gray-500 font-semibold">
+                        {% if cupos_disponibles > 0 %}
+                            ¡Quedan solo <strong class="text-mk-deep font-bold">{{ cupos_disponibles }} cupos</strong> disponibles!
+                        {% else %}
+                            <strong class="text-red-600 font-bold">¡CUPOS AGOTADOS!</strong>
+                        {% endif %}
+                    </p>
+                </div>
+
+                <!-- FORMULARIO DE INSCRIPCIÓN RÁPIDA SIN LOGIN -->
+                {% if cupos_disponibles > 0 %}
+                <form action="/eventos/{{ evento.id }}/inscribir" method="POST" class="space-y-4">
+                    <div class="text-center">
+                        <h3 class="font-serif-mk text-xl font-bold text-mk-dark">¡Reserva Tu Lugar Gratis!</h3>
+                        <p class="text-xs text-gray-500">Completa tus datos de contacto para enviarte el pase de acceso.</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Nombre y Apellido *</label>
+                        <input type="text" name="nombre_cliente" placeholder="Ej: María García" required class="w-full text-xs p-3 rounded-xl border border-gray-200 bg-mk-softgray focus:bg-white focus:border-mk-pink focus:outline-none transition">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Teléfono / WhatsApp *</label>
+                        <input type="tel" name="telefono" placeholder="Ej: 2611234567" required class="w-full text-xs p-3 rounded-xl border border-gray-200 bg-mk-softgray focus:bg-white focus:border-mk-pink focus:outline-none transition">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Correo Electrónico (Opcional)</label>
+                        <input type="email" name="email" placeholder="maria@ejemplo.com" class="w-full text-xs p-3 rounded-xl border border-gray-200 bg-mk-softgray focus:bg-white focus:border-mk-pink focus:outline-none transition">
+                    </div>
+
+                    <button type="submit" class="w-full bg-mk-rosaviejo hover:bg-mk-deep text-white font-bold text-xs uppercase py-3.5 rounded-xl transition duration-300 shadow-lg transform hover:scale-[1.02] flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-heart"></i>
+                        <span>Confirmar Mi Asistencia</span>
+                    </button>
+                </form>
+                {% else %}
+                <div class="text-center py-6 space-y-3">
+                    <i class="fa-solid fa-circle-exclamation text-4xl text-mk-deep"></i>
+                    <h3 class="font-serif-mk text-lg font-bold text-mk-dark">Inscripciones Cerradas</h3>
+                    <p class="text-xs text-gray-500">Se han completado todos los cupos disponibles para esta reunión. ¡Mantente atenta a nuestros próximos eventos!</p>
+                </div>
+                {% endif %}
+
+            </div>
+
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- SCRIPT PARA ASIGNAR EL ANCHO DE LA BARRA SIN CONFLICTOS CON EL LINTER CSS -->
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const barra = document.getElementById("barra-progreso-evento");
+        if (barra) {
+            const porcentaje = barra.getAttribute("data-porcentaje") || "0";
+            barra.style.width = porcentaje + "%";
+        }
+    });
+</script>
+
+<!-- SECCIÓN: CATÁLOGO DE PRODUCTOS CON FILTROS PROFESIONALES E-COMMERCE -->
+<section id="catalogo" class="mb-20 scroll-mt-28 space-y-8">
+    
+    <!-- Título de Sección -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-mk-rosaviejo/30 pb-4 gap-2">
+        <div>
+            <span class="text-xs font-bold text-mk-deep uppercase tracking-widest">Belleza Exclusiva</span>
+            <h2 class="font-serif-mk text-3xl md:text-4xl font-bold text-mk-dark mt-1">Catálogo de Productos</h2>
+        </div>
+        <p class="text-xs text-gray-500">Selecciona tus productos favoritos y haz tu pedido online</p>
+    </div>
+
+    <!-- BARRA DE FILTROS PROFESIONAL -->
+    <div class="bg-white rounded-3xl p-6 shadow-sm border border-mk-rosaviejo/40 space-y-4">
+        <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+            
+            <!-- Buscador por texto/letras en tiempo real -->
+            <div class="relative w-full md:w-80">
+                <input type="text" id="catalog-search" placeholder="Buscar por nombre o descripción..." 
+                       class="w-full text-xs py-3 pl-10 pr-4 rounded-2xl border border-gray-200 bg-mk-softgray focus:bg-white focus:border-mk-pink focus:outline-none transition shadow-inner">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-gray-400 text-xs"></i>
+            </div>
+
+            <!-- Filtros por Categoría (Píldoras) -->
+            <div id="category-filters" class="flex flex-wrap items-center gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
+                <button onclick="filtrarCategoria('todos')" data-cat="todos" class="cat-btn active text-xs font-bold px-4 py-2 rounded-xl transition bg-mk-deep text-white shadow-sm">
+                    Todos
+                </button>
+                {% set categorias = productos | map(attribute='categoria') | unique | list if productos else [] %}
+                {% for cat in categorias %}
+                    {% if cat %}
+                    <button onclick="filtrarCategoria('{{ cat }}')" data-cat="{{ cat }}" class="cat-btn text-xs font-semibold px-4 py-2 rounded-xl transition bg-mk-softgray text-gray-600 hover:bg-mk-lightpink hover:text-mk-dark">
+                        {{ cat }}
+                    </button>
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+            <!-- Ordenamiento -->
+            <div class="w-full md:w-auto flex items-center gap-2">
+                <select id="sort-select" onchange="ordenarProductos()" class="w-full md:w-auto text-xs py-3 px-4 rounded-2xl border border-gray-200 bg-mk-softgray focus:bg-white focus:border-mk-pink focus:outline-none transition cursor-pointer">
+                    <option value="defecto">Ordenar por: Destacados</option>
+                    <option value="precio-asc">Precio: Menor a Mayor</option>
+                    <option value="precio-desc">Precio: Mayor a Menor</option>
+                    <option value="nombre-asc">Nombre: A - Z</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Contador de resultados y botón limpiar -->
+        <div class="flex items-center justify-between pt-2 border-t border-gray-100 text-xs text-gray-500">
+            <span id="product-counter">Mostrando todos los productos</span>
+            <button onclick="resetFiltros()" class="text-mk-deep hover:underline font-bold hidden" id="reset-filters-btn">
+                <i class="fa-solid fa-rotate-left mr-1"></i> Limpiar filtros
+            </button>
+        </div>
+    </div>
+
+    <!-- REJILLA DE PRODUCTOS -->
+    <div id="productos-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+        {% for producto in productos %}
+        {% set precio_efectivo = producto.precio * (1 - producto.descuento_porcentaje / 100) if producto.descuento_porcentaje and producto.descuento_porcentaje > 0 else producto.precio %}
+        <div class="producto-card group bg-white rounded-2xl shadow-sm border border-mk-rosaviejo/40 overflow-hidden flex flex-col justify-between hover:shadow-2xl hover:border-mk-rosaviejo transition duration-500 transform hover:-translate-y-2"
+             data-nombre="{{ producto.nombre }}"
+             data-descripcion="{{ producto.descripcion or '' }}"
+             data-categoria="{{ producto.categoria or 'General' }}"
+             data-precio="{{ precio_efectivo }}">
+            <div>
+                <!-- Imagen del Producto con Zoom Hover y fondo rosa suave -->
+                <div class="w-full h-64 bg-mk-softrose/60 flex items-center justify-center p-6 border-b border-mk-rosaviejo/20 relative overflow-hidden">
+                    <img src="{{ producto.imagen_url }}" alt="{{ producto.nombre }}" class="max-h-full object-contain group-hover:scale-110 transition duration-500">
+                    <span class="absolute top-3 right-3 text-[10px] font-bold px-3 py-1 rounded-full shadow-sm {% if producto.stock > 0 %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">
+                        Stock: {{ producto.stock }} un.
+                    </span>
+                    {% if producto.descuento_porcentaje and producto.descuento_porcentaje > 0 %}
+                    <span class="absolute bottom-3 left-3 bg-red-600 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-sm animate-pulse">
+                        {{ producto.descuento_porcentaje }}% OFF
+                    </span>
+                    {% endif %}
+                    {% if producto.categoria %}
+                    <span class="absolute top-3 left-3 bg-white/90 backdrop-blur-md text-mk-dark text-[10px] font-bold px-3 py-1 rounded-full shadow-sm">
+                        {{ producto.categoria }}
+                    </span>
+                    {% endif %}
+                </div>
+                <div class="p-6">
+                    <h3 class="font-serif-mk text-lg font-bold text-mk-dark group-hover:text-mk-deep transition">{{ producto.nombre }}</h3>
+                    <p class="text-xs text-gray-500 mt-2 line-clamp-2 leading-relaxed">{{ producto.descripcion }}</p>
+                </div>
+            </div>
+            <div class="p-6 pt-0 flex items-center justify-between mt-4 border-t border-mk-rosaviejo/20 pt-4">
+                <div>
+                    <span class="text-xs text-gray-400 block uppercase font-bold text-[10px]">Precio</span>
+                    {% if producto.descuento_porcentaje and producto.descuento_porcentaje > 0 %}
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl font-bold text-mk-deep">${{ "{:,.2f}".format(precio_efectivo) }}</span>
+                            <span class="text-xs text-gray-400 line-through">${{ "{:,.2f}".format(producto.precio) }}</span>
+                        </div>
+                    {% else %}
+                        <span class="text-xl font-bold text-mk-deep">${{ "{:,.2f}".format(producto.precio) }}</span>
+                    {% endif %}
+                </div>
+                <a href="/producto/{{ producto.id }}" class="bg-mk-rosaviejo hover:bg-mk-deep text-white text-xs font-bold px-5 py-3 rounded-xl transition duration-300 shadow-md flex items-center space-x-1">
+                    <span>Ver & Comprar</span>
+                    <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Mensaje de sin resultados (Oculto por defecto) -->
+    <div id="no-products-msg" class="hidden text-center py-16 space-y-3 bg-white rounded-3xl border border-mk-rosaviejo/40 shadow-sm">
+        <i class="fa-solid fa-box-open text-4xl text-mk-rosaviejo"></i>
+        <h3 class="font-serif-mk text-lg font-bold text-mk-dark">No se encontraron productos</h3>
+        <p class="text-xs text-gray-500">Intenta buscar con otras palabras o limpia los filtros seleccionados.</p>
+        <button onclick="resetFiltros()" class="mt-2 inline-block bg-mk-deep text-white text-xs font-bold py-2 px-5 rounded-xl">
+            Ver todos los productos
+        </button>
+    </div>
+
+</section>
+
+<!-- SCRIPT DE FILTRADO PROFESIONAL E-COMMERCE -->
+<script>
+    let categoriaActual = 'todos';
+    let textoBusqueda = '';
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const searchInput = document.getElementById('catalog-search');
+        
+        searchInput.addEventListener('input', (e) => {
+            textoBusqueda = e.target.value.toLowerCase().trim();
+            aplicarFiltros();
+        });
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const queryParam = urlParams.get('q');
+        if (queryParam) {
+            searchInput.value = queryParam;
+            textoBusqueda = queryParam.toLowerCase().trim();
+            aplicarFiltros();
+            document.getElementById('catalogo')?.scrollIntoView({ behavior: 'smooth' });
+        }
+    });
+
+    function filtrarCategoria(categoria) {
+        categoriaActual = categoria;
+        
+        document.querySelectorAll('.cat-btn').forEach(btn => {
+            if (btn.getAttribute('data-cat') === categoria) {
+                btn.classList.remove('bg-mk-softgray', 'text-gray-600', 'hover:bg-mk-lightpink');
+                btn.classList.add('bg-mk-deep', 'text-white', 'shadow-sm');
+            } else {
+                btn.classList.remove('bg-mk-deep', 'text-white', 'shadow-sm');
+                btn.classList.add('bg-mk-softgray', 'text-gray-600', 'hover:bg-mk-lightpink', 'hover:text-mk-dark');
+            }
+        });
+
+        aplicarFiltros();
+    }
+
+    function aplicarFiltros() {
+        const cards = document.querySelectorAll('.producto-card');
+        let visibles = 0;
+        const resetBtn = document.getElementById('reset-filters-btn');
+        const noProductsMsg = document.getElementById('no-products-msg');
+
+        if (categoriaActual !== 'todos' || textoBusqueda !== '') {
+            resetBtn.classList.remove('hidden');
+        } else {
+            resetBtn.classList.add('hidden');
+        }
+
+        cards.forEach(card => {
+            const nombre = card.getAttribute('data-nombre').toLowerCase();
+            const descripcion = card.getAttribute('data-descripcion').toLowerCase();
+            const categoria = card.getAttribute('data-categoria');
+
+            const coincideTexto = textoBusqueda === '' || nombre.includes(textoBusqueda) || descripcion.includes(textoBusqueda);
+            const coincideCat = categoriaActual === 'todos' || categoria.toLowerCase() === categoriaActual.toLowerCase();
+
+            if (coincideTexto && coincideCat) {
+                card.style.display = 'flex';
+                visibles++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        const counter = document.getElementById('product-counter');
+        if (visibles === cards.length) {
+            counter.textContent = `Mostrando todos los productos (${visibles})`;
+        } else {
+            counter.textContent = `Mostrando ${visibles} de ${cards.length} productos`;
+        }
+
+        if (visibles === 0) {
+            noProductsMsg.classList.remove('hidden');
+        } else {
+            noProductsMsg.classList.add('hidden');
+        }
+    }
+
+    function ordenarProductos() {
+        const criterio = document.getElementById('sort-select').value;
+        const grid = document.getElementById('productos-grid');
+        const cardsArray = Array.from(grid.querySelectorAll('.producto-card'));
+
+        cardsArray.sort((a, b) => {
+            const precioA = parseFloat(a.getAttribute('data-precio'));
+            const precioB = parseFloat(b.getAttribute('data-precio'));
+            const nombreA = a.getAttribute('data-nombre');
+            const nombreB = b.getAttribute('data-nombre');
+
+            if (criterio === 'precio-asc') return precioA - precioB;
+            if (criterio === 'precio-desc') return precioB - precioA;
+            if (criterio === 'nombre-asc') return nombreA.localeCompare(nombreB);
+            return 0;
+        });
+
+        cardsArray.forEach(card => grid.appendChild(card));
+    }
+
+    function resetFiltros() {
+        categoriaActual = 'todos';
+        textoBusqueda = '';
+        document.getElementById('catalog-search').value = '';
+        document.getElementById('sort-select').value = 'defecto';
+        filtrarCategoria('todos');
+    }
+</script>
+
+<!-- SECCIÓN 2: Blog y Tips -->
+{% if posts %}
+<section class="bg-white rounded-3xl p-8 md:p-12 border border-mk-rosaviejo/40 shadow-sm my-16">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 border-b border-mk-rosaviejo/30 pb-4">
+        <div>
+            <span class="text-xs font-bold text-mk-deep uppercase tracking-widest">Inspiración & Consejos</span>
+            <h2 class="font-serif-mk text-3xl font-bold text-mk-dark mt-1">Tips y Novedades del Blog</h2>
+        </div>
+        <a href="/blog" class="text-xs font-bold text-mk-deep hover:underline mt-2 md:mt-0">Ver todos los artículos &rarr;</a>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {% for post in posts %}
+        <div class="bg-mk-softrose/40 rounded-2xl shadow-sm border border-mk-rosaviejo/30 overflow-hidden flex flex-col justify-between hover:shadow-xl hover:border-mk-rosaviejo transition duration-300 transform hover:-translate-y-1">
+            <div>
+                {% if post.imagen_url %}
+                <div class="w-full h-48 bg-mk-softrose/60 overflow-hidden border-b border-mk-rosaviejo/20">
+                    <img src="{{ post.imagen_url }}" alt="{{ post.titulo }}" class="w-full h-full object-cover hover:scale-105 transition duration-500">
+                </div>
+                {% endif %}
+                <div class="p-5">
+                    <span class="text-[10px] text-mk-deep font-bold uppercase tracking-wider">{{ post.fecha.strftime('%d/%m/%Y') if post.fecha else '' }}</span>
+                    <h3 class="font-serif-mk text-base font-bold text-mk-dark mt-1">{{ post.titulo }}</h3>
+                    <p class="text-xs text-gray-500 mt-2 line-clamp-3">{{ post.subtitulo or post.contenido }}</p>
+                </div>
+            </div>
+            <div class="p-5 pt-0 border-t border-mk-rosaviejo/20 pt-3 mt-4">
+                <a href="/blog/{{ post.id }}" class="text-xs font-bold text-mk-deep hover:underline inline-flex items-center">
+                    Leer artículo <i class="fa-solid fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+{% endblock %}

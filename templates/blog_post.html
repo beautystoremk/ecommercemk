@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}{{ post.titulo }} | BEAUTY STORE | Mary Kay Blog{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto bg-white rounded-2xl shadow-sm border border-mk-lightpink p-6 md:p-10">
+    <div class="mb-6">
+        <a href="/blog" class="text-xs font-bold text-mk-deep hover:underline">&larr; Volver al Blog</a>
+        <span class="block text-xs text-gray-400 mt-2">{{ post.fecha.strftime('%d/%m/%Y') if post.fecha else '' }}</span>
+        <h1 class="font-serif-mk text-3xl md:text-4xl font-bold text-mk-dark mt-2">{{ post.titulo }}</h1>
+        {% if post.subtitulo %}
+        <p class="text-sm text-gray-600 font-medium mt-2">{{ post.subtitulo }}</p>
+        {% endif %}
+    </div>
+
+    {% if post.imagen_url %}
+    <div class="w-full h-80 bg-mk-softgray rounded-xl overflow-hidden mb-8 border border-mk-lightpink">
+        <img src="{{ post.imagen_url }}" alt="{{ post.titulo }}" class="w-full h-full object-cover">
+    </div>
+    {% endif %}
+
+    <div class="text-gray-700 text-sm leading-relaxed space-y-4 whitespace-pre-line">
+        {{ post.contenido }}
+    </div>
+</div>
+{% endblock %}

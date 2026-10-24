@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Tips & Blog de Belleza | MARY KAY Beauty Store{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    
+    <!-- Encabezado de la Sección -->
+    <div class="text-center max-w-2xl mx-auto mb-12">
+        <span class="text-xs font-bold text-mk-deep uppercase tracking-widest bg-mk-softrose px-4 py-1.5 rounded-full border border-mk-rosaviejo/30">
+            Beauty & Skincare Tips
+        </span>
+        <h1 class="font-serif-mk text-3xl sm:text-4xl font-bold text-mk-dark mt-3 mb-3">
+            Secretos de Belleza & Cuidado
+        </h1>
+        <p class="text-xs sm:text-sm text-gray-600 leading-relaxed">
+            Descubre consejos profesionales, rutinas de cuidado de la piel y las últimas tendencias en cosmética de la mano de nuestra consultora experta.
+        </p>
+    </div>
+
+    <!-- Listado de Artículos del Blog -->
+    {% if posts %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {% for post in posts %}
+        <article class="bg-white rounded-2xl p-5 border border-mk-rosaviejo/30 hover:border-mk-rosaviejo shadow-sm hover:shadow-md transition duration-300 flex flex-col justify-between group">
+            
+            <div>
+                <!-- Imagen del Artículo con fondo rosa viejo suave -->
+                {% if post.imagen_url %}
+                <div class="bg-mk-softrose/60 rounded-xl overflow-hidden mb-5 relative aspect-video flex items-center justify-center">
+                    <img src="{{ post.imagen_url }}" alt="{{ post.titulo }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                </div>
+                {% endif %}
+
+                <!-- Fecha y Categoría -->
+                <div class="flex items-center justify-between text-[10px] text-gray-400 mb-2 uppercase tracking-wider font-semibold">
+                    <span><i class="fa-regular fa-calendar text-mk-rosaviejo mr-1"></i> {{ post.fecha.strftime('%d/%m/%Y') if post.fecha else '' }}</span>
+                    <span class="text-mk-deep bg-mk-lightpink px-2 py-0.5 rounded">Skincare</span>
+                </div>
+
+                <!-- Título y Subtítulo -->
+                <h2 class="font-serif-mk font-bold text-lg text-mk-dark mb-2 group-hover:text-mk-deep transition">
+                    {{ post.titulo }}
+                </h2>
+                
+                {% if post.subtitulo %}
+                <p class="text-xs text-gray-600 line-clamp-3 mb-4 leading-relaxed">
+                    {{ post.subtitulo }}
+                </p>
+                {% endif %}
+            </div>
+
+            <!-- Botón Leer Artículo -->
+            <div class="pt-4 border-t border-mk-rosaviejo/25 flex items-center justify-between">
+                <span class="text-[11px] text-gray-400 font-medium">Lectura de 3 min</span>
+                <a href="/blog/{{ post.id }}" class="inline-flex items-center text-xs font-bold text-white bg-mk-rosaviejo hover:bg-mk-deep px-4 py-2 rounded-xl transition shadow-sm">
+                    Leer más <i class="fa-solid fa-arrow-right ml-1.5 text-[10px]"></i>
+                </a>
+            </div>
+
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}
+    <!-- Estado Vacío -->
+    <div class="text-center py-16 bg-mk-softrose/40 rounded-3xl border border-mk-rosaviejo/30 max-w-xl mx-auto">
+        <div class="w-16 h-16 rounded-full bg-mk-lightpink border border-mk-pink flex items-center justify-center text-mk-deep text-2xl mx-auto mb-4">
+            <i class="fa-solid fa-pen-nib"></i>
+        </div>
+        <h3 class="font-serif-mk text-lg font-bold text-mk-dark mb-1">Pronto publicaremos nuevos tips</h3>
+        <p class="text-xs text-gray-500 max-w-md mx-auto">Estamos preparando artículos exclusivos con consejos de belleza y cuidado de la piel para ti.</p>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

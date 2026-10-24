@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+
+{% block title %}Carrito de Compras | BEAUTY STORE{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border border-mk-lightpink p-6 md:p-8">
+    <h1 class="font-serif-mk text-3xl font-bold text-mk-dark mb-6">Tu Carrito de Compras</h1>
+    <a href="/" class="bg-[#a81c4e] hover:bg-[#891440] text-white px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm w-fit mb-6">
+        <i class="fa-solid fa-arrow-left"></i> Volver al Catálogo
+    </a>
+    <div id="cart-container" 
+         data-descuento="{{ datos_transferencia.descuento_porcentaje }}"
+         data-activo="{{ 'true' if datos_transferencia.transferencia_activo else 'false' }}"
+         data-reglas="{{ reglas_envio_json }}">
+    </div>
+</div>
+
+<script>
+    let cuponAplicado = null;
+
+    function loadCart() {
+        const container = document.getElementById('cart-container');
+        const DESCUENTO_PORCENTAJE = parseFloat(container.getAttribute('data-descuento')) || 10;
+        const TRANSFERENCIA_ACTIVA = container.getAttribute('data-activo') === 'true';
+        
+        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+
+        if (typeof updateCartCounter === 'function') {
+            updateCartCounter();
+        }
+
+        if (cart.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-12">
+                    <p class="text-gray-500 text-sm mb-4">Tu carrito está vacío.</p>
+                    <a href="/" class="inline-block bg-mk-dark text-white text-xs font-bold px-6 py-3 rounded-xl hover:bg-mk-deep transition">Volver al Catálogo</a>
+                </div>
+            `;
+            return;
+        }
+
+        let html = `<div class="divide-y divide-gray-100 mb-6">`;
+        let subtotalGeneral = 0;
+
+        cart.forEach((item, index) => {
+            let subtotal = item.precio * item.cantidad;
+            subtotalGeneral += subtotal;
+            html += `
+                <div class="py-4 flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <img src="${item.imagen_url}" class="w-16 h-16 object-contain bg-mk-softgray p-1 rounded-lg border">
+                        <div>
+                            <h3 class="font-bold text-sm text-mk-dark">${item.nombre}</h3>
+                            <p class="text-xs text-gray-500">$${item.precio.toLocaleString('es-AR', {minimumFractionDigits: 2})} c/u</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <button type="button" onclick="changeQty(${index}, -1)" class="bg-gray-100 px-2.5 py-1 rounded text-xs font-bold">-</button>
+                        <span class="text-xs font-bold">${item.cantidad}</span>
+                        <button type="button" onclick="changeQty(${index}, 1)" class="bg-gray-100 px-2.5 py-1 rounded text-xs font-bold">+</button>
+                        <span class="text-sm font-bold text-mk-dark w-24 text-right">$${subtotal.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+                        <button type="button" onclick="removeItem(${index})" class="text-red-500 hover:text-red-700 text-xs ml-2"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += `</div>`;
+
+        // SECCIÓN DE CUPÓN DE DESCUENTO
+        html += `
+            <div class="bg-mk-lightpink/30 p-4 rounded-xl border border-mk-pink mb-6">
+                <label class="block text-xs font-bold text-mk-dark uppercase mb-2">¿Tienes un cupón de descuento?</label>
+                <div class="flex gap-2">
+                    <input type="text" id="input-cupon" placeholder="Ej: MARYKAY10" class="uppercase text-xs p-3 rounded-xl border border-gray-200 focus:border-mk-pink focus:outline-none flex-grow bg-white font-bold">
+                    <button type="button" onclick="aplicarCupon()" class="bg-mk-dark hover:bg-mk-deep text-white text-xs font-bold px-5 py-3 rounded-xl transition shadow-sm">
+                        Aplicar
+                    </button>
+                </div>
+                <div id="msg-cupon" class="text-xs font-bold mt-2 hidden"></div>
+            </div>
+        `;
+
+        html += `
+            <div class="bg-mk-softgray p-6 rounded-xl border border-mk-pink mb-8 space-y-2">
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">Subtotal Productos:</span>
+                    <span class="font-bold text-mk-dark" id="resumen-subtotal">$${subtotalGeneral.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+                </div>
+                <div id="row-descuento-cupon" class="flex justify-between text-sm text-green-700 font-bold hidden">
+                    <span>Descuento Cupón (<span id="txt-codigo-cupon"></span>):</span>
+                    <span id="resumen-cupon">-$0.00</span>
+                </div>
+                <div id="row-descuento-transferencia" class="flex justify-between text-sm text-mk-deep font-semibold ${TRANSFERENCIA_ACTIVA ? '' : 'hidden'}">
+                    <span>Descuento por Transferencia (${DESCUENTO_PORCENTAJE}% OFF):</span>
+                    <span id="resumen-descuento">-$0.00</span>
+                </div>
+                <div class="flex justify-between text-sm text-gray-600">
+                    <span>Costo de Envío:</span>
+                    <span id="resumen-envio" class="font-bold text-mk-deep">Calculando...</span>
+                </div>
+                <div class="border-t border-gray-200 pt-3 flex justify-between text-base font-bold text-mk-dark">
+                    <span>Total Final:</span>
+                    <span id="resumen-total">$0.00</span>
+                </div>
+            </div>
+
+            <form action="/checkout" method="POST" class="space-y-6 border-t pt-6" onsubmit="prepareCheckout(event)">
+                <input type="hidden" name="cart_data" id="cart_data_input">
+                <input type="hidden" name="cupon_codigo" id="cupon_codigo_input">
+
+                <h3 class="font-bold text-sm text-mk-dark uppercase tracking-wide">1. Datos de Envío y Contacto</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <input type="text" name="cliente_nombre" placeholder="Nombre Completo" required class="text-xs p-3 rounded-lg border border-gray-200 focus:border-mk-pink focus:outline-none">
+                    <input type="email" name="cliente_email" placeholder="Correo Electrónico" required class="text-xs p-3 rounded-lg border border-gray-200 focus:border-mk-pink focus:outline-none">
+                    <input type="text" name="cliente_telefono" placeholder="Teléfono / WhatsApp" required class="text-xs p-3 rounded-lg border border-gray-200 focus:border-mk-pink focus:outline-none">
+                    <input type="text" name="cliente_dni" placeholder="DNI / CUIT" required class="text-xs p-3 rounded-lg border border-gray-200 focus:border-mk-pink focus:outline-none">
+                    
+                    <input type="text" name="cliente_direccion" placeholder="Dirección de entrega (Calle y número)" required class="sm:col-span-2 text-xs p-3 rounded-lg border border-gray-200 focus:border-mk-pink focus:outline-none">
+                    
+                    <input type="text" name="cliente_localidad" placeholder="Localidad / Departamento (Ej: Luján de Cuyo)" required class="text-xs p-3 rounded-lg border border-gray-200 focus:border-mk-pink focus:outline-none">
+                    
+                    <input type="text" name="cliente_codigo_postal" placeholder="Código Postal (Ej: 5507)" required class="text-xs p-3 rounded-lg border border-gray-200 focus:border-mk-pink focus:outline-none">
+
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-bold text-mk-dark uppercase mb-1">Provincia de Destino:</label>
+                        <select id="cliente_provincia" name="cliente_provincia" onchange="actualizarCostosEnvio()" required class="w-full text-xs p-3 rounded-lg border border-gray-200 focus:border-mk-pink focus:outline-none bg-white font-semibold">
+                            {% for env in provincias_envio %}
+                            <option value="{{ env.provincia }}">{{ env.provincia }}{% if env.provincia == 'Mendoza' %} (Local / Retiro){% endif %}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <h3 class="font-bold text-sm text-mk-dark uppercase tracking-wide pt-2">2. Medio de Pago</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <label class="border p-4 rounded-xl flex items-center space-x-2 cursor-pointer hover:border-mk-pink transition">
+                        <input type="radio" name="metodo_pago" value="mercadopago" checked class="text-mk-deep" onchange="actualizarCostosEnvio()">
+                        <span class="text-xs font-semibold">Mercado Pago / Tarjeta</span>
+                    </label>
+                    <label class="border p-4 rounded-xl flex items-center space-x-2 cursor-pointer hover:border-mk-pink transition bg-mk-lightpink/40">
+                        <input type="radio" name="metodo_pago" value="transferencia" class="text-mk-deep" onchange="actualizarCostosEnvio()">
+                        <span class="text-xs font-semibold text-mk-deep">Transferencia ${TRANSFERENCIA_ACTIVA ? `(${DESCUENTO_PORCENTAJE}% OFF)` : ''}</span>
+                    </label>
+                </div>
+
+                <button type="submit" class="w-full bg-mk-dark hover:bg-mk-deep text-white font-bold py-4 rounded-xl transition duration-300 shadow-md">
+                    Finalizar Compra
+                </button>
+            </form>
+        `;
+
+        container.innerHTML = html;
+        actualizarCostosEnvio();
+    }
+
+    async function aplicarCupon() {
+        const input = document.getElementById('input-cupon');
+        const msg = document.getElementById('msg-cupon');
+        const codigo = input ? input.value.trim() : '';
+
+        if (!codigo) return;
+
+        const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+        const subtotal = cart.reduce((acc, item) => acc + (item.precio * item.cantidad), 0);
+
+        const formData = new FormData();
+        formData.append('codigo', codigo);
+        formData.append('subtotal', subtotal);
+        formData.append('cart_items', JSON.stringify(cart));
+
+        try {
+            const res = await fetch('/api/cupon/validar', { method: 'POST', body: formData });
+            const data = await res.json();
+
+            if (res.ok && data.valido) {
+                cuponAplicado = data;
+                msg.textContent = data.mensaje;
+                msg.className = 'text-xs font-bold mt-2 text-green-600 block';
+                actualizarCostosEnvio();
+            } else {
+                cuponAplicado = null;
+                msg.textContent = data.detail || 'Error al validar el cupón.';
+                msg.className = 'text-xs font-bold mt-2 text-red-600 block';
+                actualizarCostosEnvio();
+            }
+        } catch (e) {
+            msg.textContent = 'Error de conexión con el servidor.';
+            msg.className = 'text-xs font-bold mt-2 text-red-600 block';
+        }
+    }
+
+    function actualizarCostosEnvio() {
+        const container = document.getElementById('cart-container');
+        let reglasEnvio = {};
+        try {
+            reglasEnvio = JSON.parse(container.getAttribute('data-reglas') || '{}');
+        } catch (e) {
+            reglasEnvio = {};
+        }
+
+        const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+        const subtotal = cart.reduce((acc, item) => acc + (item.precio * item.cantidad), 0);
+
+        let descCupon = 0;
+        const rowCupon = document.getElementById('row-descuento-cupon');
+        if (cuponAplicado) {
+            descCupon = cuponAplicado.monto_descuento;
+            document.getElementById('txt-codigo-cupon').innerText = cuponAplicado.codigo;
+            document.getElementById('resumen-cupon').innerText = '-$' + descCupon.toLocaleString('es-AR', {minimumFractionDigits: 2});
+            rowCupon.classList.remove('hidden');
+        } else if (rowCupon) {
+            rowCupon.classList.add('hidden');
+        }
+
+        const subtotalConCupon = Math.max(0, subtotal - descCupon);
+
+        const provinciaSelect = document.getElementById('cliente_provincia');
+        const provincia = provinciaSelect ? provinciaSelect.value : 'Mendoza';
+        
+        const metodoPagoRadio = document.querySelector('input[name="metodo_pago"]:checked');
+        const esTransferencia = metodoPagoRadio && metodoPagoRadio.value === 'transferencia';
+        
+        const DESCUENTO_PORCENTAJE = parseFloat(container.getAttribute('data-descuento')) || 10;
+        const TRANSFERENCIA_ACTIVA = container.getAttribute('data-activo') === 'true';
+
+        let costoEnvio = 0.0;
+        const regla = reglasEnvio[provincia];
+
+        if (regla) {
+            if (regla.gratis_desde !== null && subtotalConCupon >= regla.gratis_desde) {
+                costoEnvio = 0.0;
+            } else {
+                costoEnvio = regla.costo;
+            }
+        }
+
+        const descuentoTransf = (esTransferencia && TRANSFERENCIA_ACTIVA) ? subtotalConCupon * (DESCUENTO_PORCENTAJE / 100) : 0.0;
+        const totalFinal = (subtotalConCupon - descuentoTransf) + costoEnvio;
+
+        document.getElementById('resumen-subtotal').innerText = '$' + subtotal.toLocaleString('es-AR', {minimumFractionDigits: 2});
+        
+        const resumenDescuentoEl = document.getElementById('resumen-descuento');
+        if (resumenDescuentoEl) {
+            resumenDescuentoEl.innerText = '-$' + descuentoTransf.toLocaleString('es-AR', {minimumFractionDigits: 2});
+        }
+        
+        const rowDescuentoTransf = document.getElementById('row-descuento-transferencia');
+        if (rowDescuentoTransf) {
+            if (TRANSFERENCIA_ACTIVA) {
+                rowDescuentoTransf.classList.remove('hidden');
+            } else {
+                rowDescuentoTransf.classList.add('hidden');
+            }
+        }
+
+        const envioEl = document.getElementById('resumen-envio');
+        if (costoEnvio === 0) {
+            envioEl.innerText = '¡GRATIS! (Beneficio aplicado)';
+            envioEl.className = 'font-bold text-green-600';
+        } else {
+            envioEl.innerText = '$' + costoEnvio.toLocaleString('es-AR', {minimumFractionDigits: 2});
+            envioEl.className = 'font-bold text-mk-deep';
+        }
+
+        document.getElementById('resumen-total').innerText = '$' + totalFinal.toLocaleString('es-AR', {minimumFractionDigits: 2});
+    }
+
+    function changeQty(index, delta) {
+        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+        let item = cart[index];
+        if (!item) return;
+
+        let nuevaCantidad = item.cantidad + delta;
+
+        // Validación estricta del stock máximo al aumentar desde el carrito
+        if (delta > 0 && item.stock !== undefined && nuevaCantidad > item.stock) {
+            alert(`No hay suficiente stock. El límite disponible para "${item.nombre}" es de ${item.stock} unidades.`);
+            return;
+        }
+
+        if (nuevaCantidad <= 0) {
+            cart.splice(index, 1);
+        } else {
+            item.cantidad = nuevaCantidad;
+        }
+
+        localStorage.setItem('cart', JSON.stringify(cart));
+        loadCart();
+        if (typeof updateCartCounter === 'function') updateCartCounter();
+    }
+
+    function removeItem(index) {
+        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+        cart.splice(index, 1);
+        localStorage.setItem('cart', JSON.stringify(cart));
+        loadCart();
+        if (typeof updateCartCounter === 'function') updateCartCounter();
+    }
+
+    function prepareCheckout(e) {
+        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+        document.getElementById('cart_data_input').value = JSON.stringify(cart);
+        if (cuponAplicado) {
+            document.getElementById('cupon_codigo_input').value = cuponAplicado.codigo;
+        }
+        localStorage.removeItem('cart');
+        if (typeof updateCartCounter === 'function') updateCartCounter();
+    }
+
+    document.addEventListener('DOMContentLoaded', loadCart);
+</script>
+{% endblock %}

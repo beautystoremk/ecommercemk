@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Pedido Confirmado #{{ pedido.id }} | BEAUTY STORE{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto my-8 p-6 bg-white rounded-2xl shadow-sm border border-mk-lightpink">
+    
+    <!-- Encabezado de la página de confirmación -->
+    <div class="text-center pb-6 border-b border-gray-100">
+        <div class="inline-flex items-center justify-center w-16 h-16 bg-green-100 text-green-600 rounded-full mb-3">
+            <i class="fa-solid fa-circle-check text-3xl"></i>
+        </div>
+        <h1 class="font-serif-mk text-2xl md:text-3xl font-bold text-mk-dark">¡Gracias por tu compra, {{ pedido.cliente_nombre }}!</h1>
+        <p class="text-xs text-gray-500 mt-1">Tu pedido <strong>#{{ pedido.id }}</strong> ha sido registrado con éxito.</p>
+    </div>
+
+    <!-- Resumen rápido del pedido -->
+    <div class="py-6 space-y-4 text-xs">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-mk-softgray p-4 rounded-xl">
+            <div>
+                <h3 class="font-bold text-mk-dark uppercase mb-1">📍 Datos de Envío</h3>
+                <p><strong>Dirección:</strong> {{ pedido.cliente_direccion }}</p>
+                <p><strong>Localidad:</strong> {{ pedido.cliente_localidad }} (CP: {{ pedido.cliente_codigo_postal }})</p>
+                <p><strong>Provincia:</strong> {{ pedido.cliente_provincia }}</p>
+                <p><strong>Costo de Envío:</strong> ${{ "{:,.2f}".format(pedido.costo_envio) }}</p>
+            </div>
+            <div>
+                <h3 class="font-bold text-mk-dark uppercase mb-1">💳 Método de Pago</h3>
+                <p><strong>Opción elegida:</strong> {{ pedido.metodo_pago | upper }}</p>
+                <p><strong>Monto Total:</strong> <span class="text-sm font-bold text-mk-deep">${{ "{:,.2f}".format(pedido.total) }}</span></p>
+                <p><strong>Estado:</strong> {{ pedido.estado_pago }}</p>
+            </div>
+        </div>
+
+        {% if pedido.metodo_pago == 'transferencia' %}
+        <!-- Datos de Transferencia Bancaria -->
+        <div class="bg-purple-50 border border-purple-200 p-4 rounded-xl space-y-2">
+            <h3 class="font-bold text-purple-900 text-sm flex items-center">
+                <i class="fa-solid fa-building-columns mr-2"></i> Datos para Realizar la Transferencia Bancaria
+            </h3>
+            <p class="text-purple-800">Realiza el pago por el monto total de <strong>${{ "{:,.2f}".format(pedido.total) }}</strong> a la siguiente cuenta:</p>
+            <ul class="list-disc list-inside space-y-1 text-purple-900 font-medium">
+                <li><strong>Plataforma / Banco:</strong> {{ datos_transferencia['Cta. Digital'] }}</li>
+                <li><strong>Titular:</strong> {{ datos_transferencia['titular'] }}</li>
+                <li><strong>CUIT:</strong> {{ datos_transferencia['cuit'] }}</li>
+                <li><strong>Alias:</strong> <span class="bg-purple-200 px-2 py-0.5 rounded font-bold">{{ datos_transferencia['alias'] }}</span></li>
+            </ul>
+            <p class="text-[11px] text-purple-700 mt-2">
+                ⚠️ Una vez realizada la transferencia, por favor envía el comprobante de pago por WhatsApp indicando el N° de Pedido #{{ pedido.id }}.
+            </p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Botones de Acción -->
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4 border-t border-gray-100">
+        <a href="/" class="w-full sm:w-auto text-center bg-mk-dark hover:bg-mk-deep text-white px-6 py-2.5 rounded-xl font-bold text-xs transition">
+            Volver a la Tienda
+        </a>
+        <a href="https://wa.me/5492616142896?text=Hola!%20Realic%C3%A9%20el%20pedido%20%23{{ pedido.id }}%20y%20quiero%20enviar%20el%20comprobante." target="_blank" class="w-full sm:w-auto text-center bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-xl font-bold text-xs transition flex items-center justify-center">
+            <i class="fa-brands fa-whatsapp text-sm mr-2"></i> Enviar Comprobante por WhatsApp
+        </a>
+    </div>
+
+    <div class="mt-6 text-center">
+    <a href="/pedido/{{ pedido.id }}/recibo-pdf" target="_blank" class="inline-flex items-center gap-2 bg-mk-dark hover:bg-mk-deep text-white text-xs font-bold px-6 py-3 rounded-xl transition shadow-md">
+        <i class="fa-solid fa-file-pdf text-base"></i> Descargar Recibo Formal (PDF)
+    </a>
+</div>
+
+</div>
+
+<!-- VENTANA FLOTANTE / MODAL DE CONFIRMACIÓN -->
+<div id="modal-confirmacion" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl border border-mk-pink max-w-md w-full p-6 text-center space-y-4 animate-fade-in">
+        
+        <!-- Icono animado -->
+        <div class="w-16 h-16 bg-mk-lightpink text-mk-deep rounded-full mx-auto flex items-center justify-center">
+            <i class="fa-solid fa-paper-plane text-2xl animate-bounce"></i>
+        </div>
+
+        <!-- Título y mensaje -->
+        <h3 class="font-serif-mk text-xl font-bold text-mk-dark">¡Pedido Registrado con Éxito!</h3>
+        
+        <p class="text-xs text-gray-600 leading-relaxed">
+            Hemos enviado un correo de confirmación a <strong class="text-mk-dark">{{ pedido.cliente_email }}</strong> con todos los detalles de tu compra y las instrucciones para realizar el pago.
+        </p>
+
+        {% if pedido.metodo_pago == 'transferencia' %}
+        <div class="bg-purple-50 text-purple-900 p-3 rounded-xl text-[11px] text-left border border-purple-100">
+            <p class="font-bold mb-1">💳 Datos para la Transferencia:</p>
+            <p>• Alias: <strong>{{ datos_transferencia['alias'] }}</strong></p>
+            <p>• Titular: <strong>{{ datos_transferencia['titular'] }}</strong></p>
+            <p>• Total a Abonar: <strong>${{ "{:,.2f}".format(pedido.total) }}</strong></p>
+        </div>
+        {% endif %}
+
+        <!-- Botón para ir al Correo Electrónico de forma directa -->
+        <div class="pt-2 space-y-2">
+            <button onclick="abrirMailCliente('{{ pedido.cliente_email }}')" class="w-full bg-mk-dark hover:bg-mk-deep text-white py-3 px-4 rounded-xl font-bold text-xs transition shadow-md flex items-center justify-center gap-2">
+                <i class="fa-solid fa-envelope-open-text text-base"></i>
+                Ir a mi Correo a Ver el Pedido
+            </button>
+
+            <!-- Botón secundario para cerrar la ventana modal -->
+            <button onclick="cerrarModal()" class="w-full bg-gray-100 text-gray-600 hover:bg-gray-200 py-2 px-4 rounded-xl font-semibold text-xs transition">
+                Entendido, ver resumen en pantalla
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    // Función para detectar el dominio del correo y redirigir al proveedor adecuado (Gmail, Outlook, etc.)
+    function abrirMailCliente(email) {
+        if (!email) {
+            window.open('https://mail.google.com', '_blank');
+            return;
+        }
+
+        const domain = email.split('@')[1] ? email.split('@')[1].toLowerCase() : '';
+
+        if (domain.includes('gmail')) {
+            window.open('https://mail.google.com', '_blank');
+        } else if (domain.includes('outlook') || domain.includes('hotmail') || domain.includes('live')) {
+            window.open('https://outlook.live.com', '_blank');
+        } else if (domain.includes('yahoo')) {
+            window.open('https://mail.yahoo.com', '_blank');
+        } else {
+            // Para otros proveedores abre un cliente de correo general
+            window.open('mailto:' + email, '_self');
+        }
+    }
+
+    // Función para ocultar el modal
+    function cerrarModal() {
+        const modal = document.getElementById('modal-confirmacion');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+    }
+</script>
+{% endblock %}
