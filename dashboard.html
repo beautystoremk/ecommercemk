@@ -1,0 +1,858 @@
+{% extends "base.html" %}
+
+{% block title %}Panel de Control Unificado | BEAUTY STORE{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto bg-white rounded-2xl shadow-sm border border-mk-lightpink p-6 md:p-8">
+    
+    <div class="flex flex-col sm:flex-row justify-between items-center mb-6 border-b pb-4 gap-4">
+        <div>
+            <span class="text-xs font-bold text-mk-deep uppercase tracking-widest bg-mk-lightpink px-3 py-1 rounded-full">Administración Central</span>
+            <h1 class="font-serif-mk text-3xl font-bold text-mk-dark mt-2">Panel de Control BEAUTY STORE</h1>
+        </div>
+        <div>
+            <a href="/admin/logout" class="text-xs bg-red-100 text-red-600 px-4 py-2.5 rounded-xl font-bold hover:bg-red-200 transition shadow-sm">
+                <i class="fa-solid fa-right-from-bracket mr-1"></i> Cerrar Sesión
+            </a>
+        </div>
+    </div>
+
+    <!-- Pestañas de Navegación -->
+    <div class="flex space-x-2 border-b border-gray-200 mb-6 overflow-x-auto">
+        <button onclick="switchTab('pedidos')" id="btn-pedidos" class="tab-btn px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 border-mk-deep text-mk-deep transition">
+            <i class="fa-solid fa-box-open mr-1"></i> Pedidos
+        </button>
+        <button onclick="switchTab('eventos')" id="btn-eventos" class="tab-btn px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 border-transparent text-gray-400 hover:text-mk-dark transition">
+            <i class="fa-solid fa-calendar-star mr-1"></i> Reuniones & Eventos
+        </button>
+        <button onclick="switchTab('productos')" id="btn-productos" class="tab-btn px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 border-transparent text-gray-400 hover:text-mk-dark transition">
+            <i class="fa-solid fa-tags mr-1"></i> Productos
+        </button>
+        <button onclick="switchTab('envios')" id="btn-envios" class="tab-btn px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 border-transparent text-gray-400 hover:text-mk-dark transition">
+            <i class="fa-solid fa-truck mr-1"></i> Envíos
+        </button>
+        <button onclick="switchTab('blog')" id="btn-blog" class="tab-btn px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 border-transparent text-gray-400 hover:text-mk-dark transition">
+            <i class="fa-solid fa-pen-nib mr-1"></i> Blog
+        </button>
+        <button onclick="switchTab('carrusel')" id="btn-carrusel" class="tab-btn px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 border-transparent text-gray-400 hover:text-mk-dark transition">
+            <i class="fa-solid fa-images mr-1"></i> Carrusel
+        </button>
+        <button onclick="switchTab('promos')" id="btn-promos" class="tab-btn px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 border-transparent text-gray-400 hover:text-mk-dark transition">
+            <i class="fa-solid fa-bullhorn mr-1"></i> Banners Promos
+        </button>
+        <button onclick="switchTab('skyscraper')" id="btn-skyscraper" class="tab-btn px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 border-transparent text-gray-400 hover:text-mk-dark transition">
+            <i class="fa-solid fa-ruler-vertical mr-1"></i> Skyscraper
+        </button>
+        <button onclick="switchTab('configuracion')" id="btn-configuracion" class="tab-btn px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 border-transparent text-gray-400 hover:text-mk-dark transition">
+            <i class="fa-solid fa-gear mr-1"></i> Config. Pago & Anuncios
+        </button>
+    </div>
+
+    <!-- PESTAÑA: PEDIDOS -->
+    <div id="tab-pedidos" class="tab-content">
+        <!-- BARRA DE BÚSQUEDA Y FILTROS -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+            <h2 class="font-serif-mk text-xl font-bold text-mk-dark">Gestión de Pedidos y Despachos</h2>
+            <form method="GET" action="/admin" class="flex flex-wrap items-center gap-2 bg-mk-softgray p-2 rounded-xl border border-mk-lightpink">
+                <div class="relative">
+                    <input type="text" name="q_busqueda" value="{{ q_busqueda }}" placeholder="N° de Pedido o Nombre..." class="text-xs p-2 pl-7 rounded-lg border bg-white focus:border-mk-pink focus:outline-none w-48">
+                    <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2.5 text-gray-400 text-xs"></i>
+                </div>
+                <div>
+                    <input type="date" name="q_fecha" value="{{ q_fecha }}" class="text-xs p-2 rounded-lg border bg-white focus:border-mk-pink focus:outline-none text-gray-600">
+                </div>
+                <button type="submit" class="bg-mk-dark hover:bg-mk-deep text-white px-3 py-2 rounded-lg text-xs font-bold transition">Buscar</button>
+                {% if q_busqueda or q_fecha %}
+                <a href="/admin" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1">
+                    <i class="fa-solid fa-xmark"></i> Limpiar
+                </a>
+                {% endif %}
+            </form>
+        </div>
+
+        {% if pedidos_info %}
+        <div class="overflow-x-auto mb-8">
+            <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                    <tr class="bg-mk-softgray border-b border-mk-lightpink text-mk-dark">
+                        <th class="p-3">#ID / Fecha</th>
+                        <th class="p-3">Cliente</th>
+                        <th class="p-3">Dirección y Envío</th>
+                        <th class="p-3">Pago</th>
+                        <th class="p-3">Total</th>
+                        <th class="p-3">Transporte y Guía</th>
+                        <th class="p-3 text-center">Gestión y Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for item in pedidos_info %}
+                    {% set p = item.pedido %}
+                    <tr class="hover:bg-mk-softgray/50">
+                        <td class="p-3 font-bold">
+                            #{{ p.id }}<br>
+                            <span class="text-[10px] text-gray-400 font-normal">{{ p.fecha.strftime('%d/%m/%Y %H:%M') if p.fecha else '' }}</span>
+                        </td>
+                        <td class="p-3">
+                            <span class="font-bold text-mk-dark">{{ p.cliente_nombre }}</span><br>
+                            <span class="text-gray-500">Tel: {{ p.cliente_telefono }}</span><br>
+                            <span class="text-gray-400 text-[10px]">DNI: {{ p.cliente_dni }}</span>
+                        </td>
+                        <td class="p-3">
+                            <span class="font-semibold">{{ p.cliente_direccion }}</span><br>
+                            <span class="text-gray-600">{{ p.cliente_localidad }}</span><br>
+                            <span class="text-mk-deep font-bold">CP: {{ p.cliente_codigo_postal or 'No especificado' }}</span><br>
+                            <span class="text-gray-500">{{ p.cliente_provincia }}</span>
+                        </td>
+                        <td class="p-3">
+                            <span class="px-2 py-1 rounded text-[10px] font-bold {% if p.metodo_pago == 'transferencia' %}bg-purple-100 text-purple-700{% else %}bg-blue-100 text-blue-700{% endif %}">
+                                {{ p.metodo_pago | upper }}
+                            </span><br>
+                            <span class="text-[10px] text-gray-500 mt-1 block">{{ p.estado_pago }}</span>
+                        </td>
+                        <td class="p-3 font-bold text-mk-dark">${{ "{:,.2f}".format(p.total) }}</td>
+                        <td class="p-3">
+                            <form action="/admin/pedidos/{{ p.id }}/despachar" method="POST" class="space-y-1.5">
+                                <input type="text" name="transporte_nombre" placeholder="Transporte (Ej: Via Cargo)" value="{{ p.transporte_nombre or '' }}" required class="w-full p-1.5 text-[11px] border rounded focus:border-mk-pink focus:outline-none">
+                                <input type="text" name="guia_seguimiento" placeholder="N° de Guía" value="{{ p.guia_seguimiento or '' }}" required class="w-full p-1.5 text-[11px] border rounded focus:border-mk-pink focus:outline-none">
+                                <button type="submit" class="w-full bg-mk-dark text-white text-[10px] py-1 rounded font-bold hover:bg-mk-deep transition">Guardar Guía</button>
+                            </form>
+                        </td>
+                        <td class="p-3 text-center space-y-1.5">
+                            <button onclick="togglePedidoEdit('{{ p.id }}')" class="w-full bg-blue-100 text-blue-700 hover:bg-blue-200 px-3 py-1.5 rounded text-[11px] font-bold transition shadow-sm">
+                                <i class="fa-solid fa-pen-to-square mr-1"></i> Editar Pedido
+                            </button>
+                            <a href="/admin/pedidos/{{ p.id }}/etiqueta" target="_blank" class="block bg-mk-dark hover:bg-mk-deep text-white px-3 py-1.5 rounded text-[11px] font-bold transition shadow-sm text-center">
+                                <i class="fa-solid fa-file-pdf mr-1"></i> Etiqueta
+                            </a>
+                            <!-- Enlace para descargar el Recibo PDF desde el Panel Admin -->
+                            <a href="/pedido/{{ p.id }}/recibo-pdf" target="_blank" class="block bg-mk-pink hover:bg-mk-deep text-mk-dark hover:text-white px-3 py-1.5 rounded text-[11px] font-bold transition shadow-sm text-center">
+                                <i class="fa-solid fa-file-invoice-dollar mr-1"></i> Recibo PDF
+                            </a>
+                            <a href="{{ item.url_wa }}" target="_blank" class="block bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-[11px] font-bold transition shadow-sm text-center">
+                                <i class="fa-brands fa-whatsapp mr-1"></i> WhatsApp
+                            </a>
+                            <form action="/admin/pedidos/{{ p.id }}/anular" method="POST" onsubmit="return confirm('¿Estás seguro de anular este pedido?');" class="inline">
+                                <button type="submit" class="w-full bg-yellow-100 text-yellow-800 hover:bg-yellow-200 px-3 py-1 rounded text-[11px] font-bold transition shadow-sm">
+                                    <i class="fa-solid fa-ban mr-1"></i> Anular
+                                </button>
+                            </form>
+                            <form action="/admin/pedidos/{{ p.id }}/eliminar" method="POST" onsubmit="return confirm('¿Estás seguro de eliminar permanentemente?');" class="inline">
+                                <button type="submit" class="w-full bg-red-100 text-red-600 hover:bg-red-200 px-3 py-1 rounded text-[11px] font-bold transition shadow-sm">
+                                    <i class="fa-solid fa-trash mr-1"></i> Eliminar
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    
+                    <!-- FORMULARIO DE EDICIÓN DE PEDIDO -->
+                    <tr id="edit-form-{{ p.id }}" class="hidden bg-blue-50/60 border-b border-blue-200">
+                        <td colspan="7" class="p-4">
+                            <form action="/admin/pedidos/{{ p.id }}/editar" method="POST" class="space-y-3 bg-white p-4 rounded-xl border border-blue-200 shadow-sm">
+                                <div class="flex justify-between items-center border-b pb-2">
+                                    <h4 class="font-bold text-xs text-mk-dark uppercase">✏️ Editar Información del Pedido #{{ p.id }}</h4>
+                                    <button type="button" onclick="togglePedidoEdit('{{ p.id }}')" class="text-xs text-gray-500 font-bold hover:text-red-600"><i class="fa-solid fa-xmark"></i> Cerrar</button>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-gray-600 mb-1">Nombre Cliente</label>
+                                        <input type="text" name="cliente_nombre" value="{{ p.cliente_nombre }}" required class="p-2 border rounded text-xs w-full">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-gray-600 mb-1">Teléfono</label>
+                                        <input type="text" name="cliente_telefono" value="{{ p.cliente_telefono }}" required class="p-2 border rounded text-xs w-full">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-gray-600 mb-1">Email</label>
+                                        <input type="email" name="cliente_email" value="{{ p.cliente_email or '' }}" class="p-2 border rounded text-xs w-full">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-gray-600 mb-1">DNI / CUIT</label>
+                                        <input type="text" name="cliente_dni" value="{{ p.cliente_dni }}" required class="p-2 border rounded text-xs w-full">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-gray-600 mb-1">Dirección</label>
+                                        <input type="text" name="cliente_direccion" value="{{ p.cliente_direccion }}" required class="p-2 border rounded text-xs w-full">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-gray-600 mb-1">Localidad</label>
+                                        <input type="text" name="cliente_localidad" value="{{ p.cliente_localidad }}" required class="p-2 border rounded text-xs w-full">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-gray-600 mb-1">Provincia</label>
+                                        <input type="text" name="cliente_provincia" value="{{ p.cliente_provincia }}" required class="p-2 border rounded text-xs w-full">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-gray-600 mb-1">Código Postal</label>
+                                        <input type="text" name="cliente_codigo_postal" value="{{ p.cliente_codigo_postal or '' }}" required class="p-2 border rounded text-xs w-full">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-gray-600 mb-1">Costo de Envío ($)</label>
+                                        <input type="number" step="0.01" name="costo_envio" value="{{ p.costo_envio }}" required class="p-2 border rounded text-xs w-full font-bold">
+                                    </div>
+                                </div>
+                                <div class="pt-2 flex justify-end">
+                                    <button type="submit" class="bg-blue-600 text-white font-bold px-5 py-2 rounded-lg text-xs hover:bg-blue-700 transition shadow-sm">
+                                        <i class="fa-solid fa-floppy-disk mr-1"></i> Guardar Cambios en Pedido
+                                    </button>
+                                </div>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-center text-gray-500 py-12 text-xs">No hay pedidos registrados todavía.</p>
+        {% endif %}
+
+        <!-- GESTIÓN DE CUPONES DE DESCUENTO -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8 mt-6">
+            <h2 class="font-serif-mk text-xl font-bold text-mk-dark mb-4">Gestión de Cupones de Descuento</h2>
+            
+            <form action="/admin/cupones/crear" method="POST" class="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-7 gap-3 mb-6 bg-mk-softgray p-4 rounded-xl items-center">
+                <input type="text" name="codigo" placeholder="CÓDIGO (Ej: BIENVENIDA)" required class="text-xs p-2.5 rounded-lg border uppercase font-bold bg-white">
+                <select name="tipo_descuento" class="text-xs p-2.5 rounded-lg border bg-white font-semibold">
+                    <option value="porcentaje">Porcentaje (%)</option>
+                    <option value="fijo">Monto Fijo ($)</option>
+                </select>
+                <input type="number" step="0.01" name="valor" placeholder="Valor (Ej: 10 u 800)" required class="text-xs p-2.5 rounded-lg border bg-white font-semibold">
+                <input type="number" step="0.01" name="monto_minimo" placeholder="Mínimo Compra ($)" class="text-xs p-2.5 rounded-lg border bg-white font-semibold">
+                <input type="number" name="usos_maximos" placeholder="Límite Usos (Opcional)" class="text-xs p-2.5 rounded-lg border bg-white font-semibold">
+                
+                <select name="producto_id" class="text-xs p-2.5 rounded-lg border bg-white font-semibold">
+                    <option value="">Aplica a Todo (General)</option>
+                    {% for p in productos %}
+                    <option value="{{ p.id }}">{{ p.nombre }}</option>
+                    {% endfor %}
+                </select>
+
+                <button type="submit" class="bg-mk-dark hover:bg-mk-deep text-white text-xs font-bold rounded-lg py-2.5 transition shadow-sm">
+                    Crear Cupón
+                </button>
+            </form>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-gray-100 text-mk-dark uppercase">
+                        <tr>
+                            <th class="p-3">Código</th>
+                            <th class="p-3">Tipo / Valor</th>
+                            <th class="p-3">Mínimo Compra</th>
+                            <th class="p-3">Producto Exclusivo</th>
+                            <th class="p-3">Usos</th>
+                            <th class="p-3">Estado</th>
+                            <th class="p-3 text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        {% for c in cupones_admin %}
+                        <tr>
+                            <td class="p-3 font-bold text-mk-deep">{{ c.codigo }}</td>
+                            <td class="p-3">{% if c.tipo_descuento == 'porcentaje' %}{{ c.valor }}% OFF{% else %}${{ c.valor }} OFF{% endif %}</td>
+                            <td class="p-3">${{ "{:,.2f}".format(c.monto_minimo) }}</td>
+                            <td class="p-3">
+                                {% if c.producto %}
+                                    <span class="text-mk-deep font-bold">{{ c.producto.nombre }}</span>
+                                {% else %}
+                                    <span class="text-gray-400 italic">General (Todo el carrito)</span>
+                                {% endif %}
+                            </td>
+                            <td class="p-3">{{ c.usos_actuales }} / {{ c.usos_maximos or '∞' }}</td>
+                            <td class="p-3">
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold {% if c.activo %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">
+                                    {% if c.activo %}Activo{% else %}Inactivo{% endif %}
+                                </span>
+                            </td>
+                            <td class="p-3 flex justify-center gap-2">
+                                <form action="/admin/cupones/{{ c.id }}/estado" method="POST">
+                                    <button class="bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded text-[10px] font-bold">
+                                        {% if c.activo %}Pausar{% else %}Activar{% endif %}
+                                    </button>
+                                </form>
+                                <form action="/admin/cupones/{{ c.id }}/eliminar" method="POST" onsubmit="return confirm('¿Eliminar cupón?')">
+                                    <button class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-[10px] font-bold">Eliminar</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- PESTAÑA: REUNIONES Y EVENTOS DE BELLEZA -->
+    <div id="tab-eventos" class="tab-content hidden">
+        <h2 class="font-serif-mk text-xl font-bold text-mk-dark mb-4">Gestión de Reuniones de Belleza y Capacitaciones</h2>
+        
+        <!-- Formulario para crear un nuevo evento / capacitación -->
+        <form action="/admin/eventos/crear" method="POST" class="bg-mk-softgray p-6 rounded-xl border border-mk-lightpink mb-8 space-y-4">
+            <h3 class="font-bold text-xs uppercase text-mk-dark">Publicar Nueva Reunión / Masterclass</h3>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div>
+                    <label class="block text-[11px] font-semibold text-gray-600 mb-1">Título de la Reunión</label>
+                    <input type="text" name="titulo" placeholder="Ej: Masterclass Cuidado TimeWise 3D" required class="text-xs p-2.5 rounded-lg border bg-white w-full">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-semibold text-gray-600 mb-1">Nombre de la Oradora / Capacitadora</label>
+                    <input type="text" name="oradora_nombre" placeholder="Ej: Analía Domínguez - Director/a" required class="text-xs p-2.5 rounded-lg border bg-white w-full">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-semibold text-gray-600 mb-1">URL Foto Oradora</label>
+                    <input type="text" name="oradora_foto_url" placeholder="https://..." required class="text-xs p-2.5 rounded-lg border bg-white w-full">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-semibold text-gray-600 mb-1">Fecha y Horario Texto</label>
+                    <input type="text" name="fecha_hora_texto" placeholder="Ej: Sábado 18 de Noviembre - 17:00 hs" required class="text-xs p-2.5 rounded-lg border bg-white w-full">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-semibold text-gray-600 mb-1">Modalidad</label>
+                    <select name="modalidad" class="text-xs p-2.5 rounded-lg border bg-white w-full">
+                        <option value="Presencial">Presencial</option>
+                        <option value="Online (Zoom / Meet)">Online (Zoom / Meet)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[11px] font-semibold text-gray-600 mb-1">Lugar o Link de Acceso</label>
+                    <input type="text" name="lugar" placeholder="Ej: Carrodilla, Luján de Cuyo o Vía Zoom" required class="text-xs p-2.5 rounded-lg border bg-white w-full">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-semibold text-gray-600 mb-1">Cupo Máximo Asistentes</label>
+                    <input type="number" name="cupo_maximo" value="20" required class="text-xs p-2.5 rounded-lg border bg-white w-full font-bold">
+                </div>
+                <div class="sm:col-span-2">
+                    <label class="block text-[11px] font-semibold text-gray-600 mb-1">Descripción Breve</label>
+                    <input type="text" name="descripcion" placeholder="Resumen atractivo del evento" required class="text-xs p-2.5 rounded-lg border bg-white w-full">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-[11px] font-semibold text-gray-600 mb-1">Temario / Lo que aprenderán (Un ítem por línea)</label>
+                <textarea name="temario" rows="3" placeholder="Diagnóstico de tipo de piel&#10;Técnicas de automaquillaje express&#10;Demostración en vivo de productos" class="text-xs p-2.5 rounded-lg border bg-white w-full"></textarea>
+            </div>
+
+            <div class="flex items-center space-x-2">
+                <input type="checkbox" id="ev_activo" name="activo" value="true" checked class="w-4 h-4 text-mk-deep rounded border-gray-300">
+                <label for="ev_activo" class="text-xs font-bold text-gray-700 cursor-pointer">Activar inmediatamente este evento en la web principal</label>
+            </div>
+
+            <button type="submit" class="bg-mk-dark hover:bg-mk-deep text-white text-xs font-bold px-6 py-3 rounded-xl transition shadow-md">
+                <i class="fa-solid fa-bullhorn mr-1"></i> Publicar Evento
+            </button>
+        </form>
+
+        <!-- Listado de Eventos Creados e Inscriptos -->
+        <div class="space-y-6">
+            {% for ev in eventos_admin %}
+            <div class="border rounded-2xl p-5 bg-white shadow-sm space-y-4">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b pb-4">
+                    <div class="flex items-center space-x-4">
+                        <img src="{{ ev.oradora_foto_url }}" class="w-14 h-14 rounded-full object-cover border-2 border-mk-pink">
+                        <div>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full {{ 'bg-green-100 text-green-700' if ev.activo else 'bg-gray-200 text-gray-600' }}">
+                                {{ 'ACTIVO EN HOME' if ev.activo else 'INACTIVO' }}
+                            </span>
+                            <h3 class="font-bold text-sm text-mk-dark mt-1">{{ ev.titulo }}</h3>
+                            <p class="text-xs text-gray-500">Capacitadora: <strong>{{ ev.oradora_nombre }}</strong> | {{ ev.fecha_hora_texto }} ({{ ev.modalidad }})</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <form action="/admin/eventos/{{ ev.id }}/estado" method="POST">
+                            <button type="submit" class="text-xs font-bold px-3 py-1.5 rounded-lg border transition {{ 'bg-amber-100 text-amber-800 border-amber-300' if ev.activo else 'bg-green-100 text-green-800 border-green-300' }}">
+                                {{ 'Pausar' if ev.activo else 'Activar' }}
+                            </button>
+                        </form>
+                        <form action="/admin/eventos/{{ ev.id }}/eliminar" method="POST" onsubmit="return confirm('¿Eliminar reunión?')">
+                            <button type="submit" class="bg-red-100 text-red-600 hover:bg-red-200 p-2 rounded-lg text-xs font-bold transition">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- LISTADO DE ASISTENTES INSCRIPTAS EN ESTA REUNIÓN -->
+                <div>
+                    <h4 class="text-xs font-bold text-mk-dark uppercase mb-2 flex items-center justify-between">
+                        <span><i class="fa-solid fa-users text-mk-deep mr-1"></i> Asistentes Inscriptas ({{ ev.inscripciones | length }} / {{ ev.cupo_maximo }})</span>
+                    </h4>
+
+                    {% if ev.inscripciones %}
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border">
+                            <thead class="bg-mk-softgray text-mk-dark">
+                                <tr>
+                                    <th class="p-2">Fecha Inscripción</th>
+                                    <th class="p-2">Nombre y Apellido</th>
+                                    <th class="p-2">WhatsApp / Teléfono</th>
+                                    <th class="p-2">Email</th>
+                                    <th class="p-2 text-center">Contactar</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y">
+                                {% for insc in ev.inscripciones %}
+                                {% set num_tel = insc.telefono | replace('+', '') | replace(' ', '') | replace('-', '') %}
+                                {% set mensaje_wa = "Hola " ~ insc.nombre_cliente ~ ", te confirmamos tu lugar para la reunión de belleza " ~ ev.titulo ~ "!" %}
+                                {% set url_wa = "https://wa.me/" ~ num_tel if num_tel else "#" %}
+                                <tr class="hover:bg-gray-50">
+                                    <td class="p-2 text-gray-400">{{ insc.fecha_inscripcion.strftime('%d/%m/%Y %H:%M') if insc.fecha_inscripcion else '' }}</td>
+                                    <td class="p-2 font-bold text-mk-dark">{{ insc.nombre_cliente }}</td>
+                                    <td class="p-2 font-mono">{{ insc.telefono }}</td>
+                                    <td class="p-2 text-gray-500">{{ insc.email or 'S/D' }}</td>
+                                    <td class="p-2 text-center flex justify-center space-x-2">
+                                        <a href="{{ url_wa }}" target="_blank" class="bg-green-600 text-white px-2 py-1 rounded text-[10px] font-bold hover:bg-green-700 transition">
+                                            <i class="fa-brands fa-whatsapp"></i> WA
+                                        </a>
+                                        <form action="/admin/eventos/inscripciones/{{ insc.id }}/eliminar" method="POST" onsubmit="return confirm('¿Eliminar inscripta?')">
+                                            <button class="bg-red-100 text-red-600 px-2 py-1 rounded text-[10px] font-bold hover:bg-red-200">
+                                                <i class="fa-solid fa-xmark"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-xs text-gray-400 italic">No hay inscriptas registradas aún para esta sesión.</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- PESTAÑA: PRODUCTOS CON EDICIÓN Y % DESCUENTO -->
+    <div id="tab-productos" class="tab-content hidden">
+        <h2 class="font-serif-mk text-xl font-bold text-mk-dark mb-4">Gestión de Productos e Inventario</h2>
+        
+        <!-- Formulario para crear producto -->
+        <form action="/admin/productos/crear" method="POST" class="bg-mk-softgray p-4 rounded-xl border border-mk-lightpink mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 items-end">
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Nombre</label>
+                <input type="text" name="nombre" placeholder="Nombre del Producto" required class="text-xs p-2.5 rounded-lg border bg-white w-full">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Descripción</label>
+                <input type="text" name="descripcion" placeholder="Descripción breve" required class="text-xs p-2.5 rounded-lg border bg-white w-full">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Precio ($)</label>
+                <input type="text" name="precio" placeholder="Ej: 102000" required class="text-xs p-2.5 rounded-lg border bg-white w-full">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">% Descuento</label>
+                <input type="number" step="0.1" name="descuento_porcentaje" value="0" placeholder="Ej: 15" class="text-xs p-2.5 rounded-lg border bg-white w-full font-bold text-mk-deep">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Stock</label>
+                <input type="number" name="stock" placeholder="Cantidad disponible" required class="text-xs p-2.5 rounded-lg border bg-white w-full">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">URL Imagen</label>
+                <input type="text" name="imagen_url" placeholder="https://..." required class="text-xs p-2.5 rounded-lg border bg-white w-full">
+            </div>
+            <div class="lg:col-span-6">
+                <button type="submit" class="bg-mk-dark hover:bg-mk-deep text-white text-xs font-bold px-5 py-2.5 rounded-xl transition shadow-sm">
+                    <i class="fa-solid fa-plus mr-1"></i> Crear Producto
+                </button>
+            </div>
+        </form>
+
+        <!-- Grilla de Productos con Formularios de Edición Integrados -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for prod in productos %}
+            <div class="border rounded-xl p-4 bg-gray-50 flex flex-col justify-between space-y-3 shadow-sm relative">
+                <div class="flex space-x-3">
+                    <img src="{{ prod.imagen_url }}" class="w-16 h-16 object-cover rounded-lg border bg-white">
+                    <div class="flex-grow">
+                        <h3 class="font-bold text-xs text-mk-dark">{{ prod.nombre }}</h3>
+                        <p class="text-[11px] text-gray-500 line-clamp-2">{{ prod.descripcion }}</p>
+                        {% if prod.descuento_porcentaje and prod.descuento_porcentaje > 0 %}
+                            {% set precio_o = prod.precio * (1 - prod.descuento_porcentaje / 100) %}
+                            <p class="text-xs font-bold text-mk-deep mt-1">
+                                ${{ "{:,.2f}".format(precio_o) }} <span class="text-[10px] text-gray-400 line-through">${{ "{:,.2f}".format(prod.precio) }}</span> <span class="bg-red-500 text-white text-[9px] px-1.5 py-0.5 rounded">{{ prod.descuento_porcentaje }}% OFF</span>
+                            </p>
+                        {% else %}
+                            <p class="text-xs font-bold text-mk-deep mt-1">${{ "{:,.2f}".format(prod.precio) }}</p>
+                        {% endif %}
+                        <p class="text-[11px] text-gray-500">Stock: {{ prod.stock }}</p>
+                    </div>
+                </div>
+
+                <div class="flex gap-2 pt-2 border-t">
+                    <button onclick="toggleProdEdit('prod-{{ prod.id }}')" class="flex-grow bg-blue-100 text-blue-700 hover:bg-blue-200 text-xs font-bold py-1.5 rounded transition">
+                        <i class="fa-solid fa-pen-to-square mr-1"></i> Editar
+                    </button>
+                    <form action="/admin/productos/{{ prod.id }}/estado" method="POST" class="flex-grow">
+                        <button class="w-full text-xs font-bold py-1.5 rounded transition {{ 'bg-green-100 text-green-700' if prod.activo else 'bg-gray-200 text-gray-600' }}">
+                            {{ 'Activo' if prod.activo else 'Inactivo' }}
+                        </button>
+                    </form>
+                    <form action="/admin/productos/{{ prod.id }}/eliminar" method="POST" onsubmit="return confirm('¿Eliminar producto?')" class="flex-grow">
+                        <button class="w-full bg-red-100 text-red-600 hover:bg-red-200 text-xs font-bold py-1.5 rounded transition">Eliminar</button>
+                    </form>
+                </div>
+
+                <!-- DESPLEGABLE PARA EDITAR PRODUCTO -->
+                <div id="edit-prod-{{ prod.id }}" class="hidden bg-white p-3 rounded-lg border border-blue-300 mt-2 space-y-2 shadow-inner">
+                    <div class="flex justify-between items-center border-b pb-1">
+                        <span class="text-[10px] font-bold text-mk-dark uppercase">Editar {{ prod.nombre }}</span>
+                        <button type="button" onclick="toggleProdEdit('prod-{{ prod.id }}')" class="text-xs text-gray-400 font-bold hover:text-red-500"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <form action="/admin/productos/{{ prod.id }}/editar" method="POST" class="space-y-2">
+                        <div>
+                            <label class="block text-[9px] font-bold text-gray-500">Nombre</label>
+                            <input type="text" name="nombre" value="{{ prod.nombre }}" required class="text-xs p-1.5 border rounded w-full">
+                        </div>
+                        <div>
+                            <label class="block text-[9px] font-bold text-gray-500">Descripción</label>
+                            <input type="text" name="descripcion" value="{{ prod.descripcion }}" required class="text-xs p-1.5 border rounded w-full">
+                        </div>
+                        <div class="grid grid-cols-3 gap-2">
+                            <div>
+                                <label class="block text-[9px] font-bold text-gray-500">Precio ($)</label>
+                                <input type="text" name="precio" value="{{ prod.precio }}" required class="text-xs p-1.5 border rounded w-full">
+                            </div>
+                            <div>
+                                <label class="block text-[9px] font-bold text-gray-500">% Descuento</label>
+                                <input type="number" step="0.1" name="descuento_porcentaje" value="{{ prod.descuento_porcentaje or 0 }}" class="text-xs p-1.5 border rounded w-full font-bold text-mk-deep">
+                            </div>
+                            <div>
+                                <label class="block text-[9px] font-bold text-gray-500">Stock</label>
+                                <input type="number" name="stock" value="{{ prod.stock }}" required class="text-xs p-1.5 border rounded w-full">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[9px] font-bold text-gray-500">URL Imagen</label>
+                            <input type="text" name="imagen_url" value="{{ prod.imagen_url }}" required class="text-xs p-1.5 border rounded w-full">
+                        </div>
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 rounded text-xs transition">
+                            <i class="fa-solid fa-floppy-disk mr-1"></i> Guardar Cambios
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- PESTAÑA: ENVÍOS -->
+    <div id="tab-envios" class="tab-content hidden">
+        <h2 class="font-serif-mk text-xl font-bold text-mk-dark mb-4">Gestión de Costos de Envío por Provincia</h2>
+        <p class="text-xs text-gray-500 mb-4">Modifica el costo para envíos locales o nacionales, establece el monto mínimo para envío gratuito o activa/desactiva provincias.</p>
+        
+        <div class="overflow-x-auto bg-white rounded-xl border border-gray-200 shadow-sm">
+            <table class="w-full text-left text-xs">
+                <thead class="bg-mk-softgray text-mk-dark uppercase border-b">
+                    <tr>
+                        <th class="p-3">Provincia / Destino</th>
+                        <th class="p-3">Costo de Envío ($)</th>
+                        <th class="p-3">Envío Gratis Desde ($)</th>
+                        <th class="p-3">Estado</th>
+                        <th class="p-3 text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for env in provincias_admin %}
+                    <tr class="hover:bg-gray-50">
+                        <form action="/admin/envios/{{ env.id }}/editar" method="POST">
+                            <td class="p-3 font-bold text-mk-dark text-sm">{{ env.provincia }}</td>
+                            <td class="p-3">
+                                <input type="number" step="0.01" name="costo" value="{{ env.costo }}" required class="text-xs p-2 rounded-lg border bg-white w-32 font-bold focus:border-mk-pink focus:outline-none">
+                            </td>
+                            <td class="p-3">
+                                <input type="number" step="0.01" name="gratis_desde" value="{{ env.gratis_desde if env.gratis_desde is not none else '' }}" placeholder="Ej: 50000 (Opcional)" class="text-xs p-2 rounded-lg border bg-white w-36 focus:border-mk-pink focus:outline-none">
+                            </td>
+                            <td class="p-3">
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" name="activo" value="true" {% if env.activo %}checked{% endif %} class="w-4 h-4 text-mk-deep rounded border-gray-300 focus:ring-mk-pink">
+                                    <span class="font-semibold text-gray-700">Habilitado</span>
+                                </label>
+                            </td>
+                            <td class="p-3 text-center">
+                                <button type="submit" class="bg-mk-dark hover:bg-mk-deep text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm">
+                                    Guardar
+                                </button>
+                            </td>
+                        </form>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- PESTAÑA: BLOG -->
+    <div id="tab-blog" class="tab-content hidden">
+        <h2 class="font-serif-mk text-xl font-bold text-mk-dark mb-4">Gestión de Publicaciones del Blog</h2>
+        
+        <form action="/admin/blog/crear" method="POST" class="bg-mk-softgray p-4 rounded-xl border border-mk-lightpink mb-6 space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input type="text" name="titulo" placeholder="Título del Artículo" required class="text-xs p-2.5 rounded-lg border bg-white w-full">
+                <input type="text" name="subtitulo" placeholder="Subtítulo o Resumen" required class="text-xs p-2.5 rounded-lg border bg-white w-full">
+            </div>
+            <input type="text" name="imagen_url" placeholder="URL de la Imagen Portada" required class="text-xs p-2.5 rounded-lg border bg-white w-full">
+            <textarea name="contenido" rows="4" placeholder="Contenido del artículo..." required class="text-xs p-2.5 rounded-lg border bg-white w-full"></textarea>
+            <button type="submit" class="bg-mk-dark hover:bg-mk-deep text-white text-xs font-bold px-5 py-2.5 rounded-xl transition">
+                Publicar Artículo
+            </button>
+        </form>
+
+        <div class="space-y-3">
+            {% for post in posts %}
+            <div class="border rounded-xl p-3 bg-gray-50 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <img src="{{ post.imagen_url }}" class="w-16 h-16 object-cover rounded-lg border">
+                    <div>
+                        <h4 class="font-bold text-xs text-mk-dark">{{ post.titulo }}</h4>
+                        <p class="text-[11px] text-gray-500">{{ post.subtitulo }}</p>
+                    </div>
+                </div>
+                <form action="/admin/blog/{{ post.id }}/eliminar" method="POST" onsubmit="return confirm('¿Eliminar artículo?')">
+                    <button type="submit" class="text-red-500 hover:text-red-700 text-xs p-2"><i class="fa-solid fa-trash"></i></button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- PESTAÑA: CARRUSEL -->
+    <div id="tab-carrusel" class="tab-content hidden">
+        <h2 class="font-serif-mk text-xl font-bold text-mk-dark mb-4">Gestión del Carrusel Flotante</h2>
+        
+        <form action="/admin/carrusel/crear" method="POST" class="bg-mk-softgray p-4 rounded-xl border border-mk-lightpink mb-6 grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Título / Descripción</label>
+                <input type="text" name="titulo" placeholder="Ej: Promoción Especial" class="text-xs p-2.5 rounded-lg border bg-white w-full">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">URL Imagen</label>
+                <input type="text" name="imagen_url" placeholder="https://..." required class="text-xs p-2.5 rounded-lg border bg-white w-full">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Orden</label>
+                <input type="number" name="orden" value="0" class="text-xs p-2.5 rounded-lg border bg-white w-full">
+            </div>
+            <div class="sm:col-span-3">
+                <button type="submit" class="bg-mk-dark hover:bg-mk-deep text-white text-xs font-bold px-5 py-2.5 rounded-xl transition">
+                    Agregar Elemento
+                </button>
+            </div>
+        </form>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {% for item in carrusel_admin_items %}
+            <div class="border rounded-xl p-3 bg-gray-50 flex items-center justify-between">
+                <img src="{{ item.imagen_url }}" class="w-16 h-16 object-cover rounded-lg border bg-white">
+                <div class="flex-grow px-3">
+                    <p class="text-xs font-bold text-mk-dark">{{ item.titulo or 'Sin Título' }}</p>
+                    <p class="text-[10px] text-gray-500">Orden: {{ item.orden }}</p>
+                </div>
+                <form action="/admin/carrusel/{{ item.id }}/eliminar" method="POST" onsubmit="return confirm('¿Eliminar del carrusel?')">
+                    <button type="submit" class="text-red-500 hover:text-red-700 text-xs p-2"><i class="fa-solid fa-trash"></i></button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- PESTAÑA: BANNERS PROMOS -->
+    <div id="tab-promos" class="tab-content hidden">
+        <h2 class="font-serif-mk text-xl font-bold text-mk-dark mb-4">Gestión de Banners Promocionales y Ofertas</h2>
+        
+        <form action="/admin/banners/crear" method="POST" class="bg-mk-softgray p-4 rounded-xl border border-mk-lightpink mb-6 grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Título</label>
+                <input type="text" name="titulo" placeholder="Ej: Banner Descuento" class="text-xs p-2.5 rounded-lg border bg-white w-full">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">URL Multimedia</label>
+                <input type="text" name="media_url" placeholder="https://..." required class="text-xs p-2.5 rounded-lg border bg-white w-full">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Enlace de Destino</label>
+                <input type="text" name="enlace_url" placeholder="/producto/1" class="text-xs p-2.5 rounded-lg border bg-white w-full">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Orden</label>
+                <input type="number" name="orden" value="0" class="text-xs p-2.5 rounded-lg border bg-white w-full">
+            </div>
+            <div class="sm:col-span-4">
+                <button type="submit" class="bg-mk-dark hover:bg-mk-deep text-white text-xs font-bold px-5 py-2.5 rounded-xl transition">
+                    Crear Banner
+                </button>
+            </div>
+        </form>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {% for banner in banners_admin %}
+            <div class="border rounded-xl p-3 bg-gray-50 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <img src="{{ banner.media_url }}" class="w-16 h-16 object-cover rounded-lg border bg-white">
+                    <div>
+                        <p class="text-xs font-bold text-mk-dark">{{ banner.titulo or 'Banner sin título' }}</p>
+                        <span class="text-[10px] bg-mk-lightpink text-mk-deep px-2 py-0.5 rounded font-bold">Orden: {{ banner.orden }}</span>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <form action="/admin/banners/{{ banner.id }}/estado" method="POST">
+                        <button type="submit" class="text-xs px-3 py-1.5 rounded font-bold {{ 'bg-green-100 text-green-700' if banner.activo else 'bg-gray-200 text-gray-600' }}">
+                            {{ 'Activo' if banner.activo else 'Inactivo' }}
+                        </button>
+                    </form>
+                    <form action="/admin/banners/{{ banner.id }}/eliminar" method="POST" onsubmit="return confirm('¿Eliminar banner?')">
+                        <button type="submit" class="text-red-500 hover:text-red-700 text-xs p-2"><i class="fa-solid fa-trash"></i></button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- PESTAÑA: SKYSCRAPER -->
+    <div id="tab-skyscraper" class="tab-content hidden">
+        <h2 class="font-serif-mk text-xl font-bold text-mk-dark mb-4">Gestión de Banner Skyscraper</h2>
+        
+        <form action="/admin/skyscraper/guardar" method="POST" class="bg-mk-softgray p-4 rounded-xl border border-mk-lightpink mb-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Título</label>
+                <input type="text" name="titulo" placeholder="Ej: Oferta Flotante" class="text-xs p-2.5 rounded-lg border bg-white w-full">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Texto Vertical</label>
+                <input type="text" name="texto_vertical" placeholder="Ej: 20% OFF" class="text-xs p-2.5 rounded-lg border bg-white w-full">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">URL Imagen</label>
+                <input type="text" name="media_url" placeholder="https://..." required class="text-xs p-2.5 rounded-lg border bg-white w-full">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Enlace de Destino</label>
+                <input type="text" name="enlace_url" placeholder="/producto/1" class="text-xs p-2.5 rounded-lg border bg-white w-full">
+            </div>
+            <div class="sm:col-span-2 flex items-center space-x-2 pt-2">
+                <input type="checkbox" id="sk_activo" name="activo" value="true" class="w-4 h-4 text-mk-deep rounded border-gray-300">
+                <label for="sk_activo" class="text-xs font-bold text-gray-700 cursor-pointer">Activar Skyscraper Principal</label>
+            </div>
+            <div class="sm:col-span-2 pt-2">
+                <button type="submit" class="bg-mk-dark hover:bg-mk-deep text-white text-xs font-bold px-5 py-2.5 rounded-xl transition">
+                    Guardar Skyscraper
+                </button>
+            </div>
+        </form>
+
+        <div class="space-y-3">
+            {% for sk in skyscrapers %}
+            <div class="border rounded-xl p-3 bg-gray-50 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <img src="{{ sk.media_url }}" class="w-12 h-16 object-cover rounded-lg border bg-white">
+                    <div>
+                        <p class="text-xs font-bold text-mk-dark">{{ sk.titulo or 'Sin título' }} <span class="text-[10px] text-gray-500">({{ sk.texto_vertical }})</span></p>
+                        <span class="text-[10px] font-bold {{ 'text-green-600' if sk.activo else 'text-gray-400' }}">{{ 'ACTIVO' if sk.activo else 'Inactivo' }}</span>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <form action="/admin/skyscraper/{{ sk.id }}/estado" method="POST">
+                        <button type="submit" class="bg-gray-200 hover:bg-gray-300 text-xs px-3 py-1.5 rounded font-bold">Cambiar Estado</button>
+                    </form>
+                    <form action="/admin/skyscraper/{{ sk.id }}/eliminar" method="POST" onsubmit="return confirm('¿Eliminar skyscraper?')">
+                        <button type="submit" class="text-red-500 hover:text-red-700 text-xs p-2"><i class="fa-solid fa-trash"></i></button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- PESTAÑA: CONFIGURACIÓN DE PAGO Y ANUNCIOS -->
+    <div id="tab-configuracion" class="tab-content hidden">
+        <h2 class="font-serif-mk text-xl font-bold text-mk-dark mb-4">Gestión de Pago por Transferencia y Barra de Anuncios</h2>
+        
+        <form action="/admin/transferencia/guardar" method="POST" class="bg-mk-softgray p-6 rounded-xl border border-mk-lightpink space-y-4">
+            
+            <!-- CAMPO: Texto de la Barra de Publicidad Superior Desplazable -->
+            <div class="bg-white p-4 rounded-xl border border-gray-200 space-y-2">
+                <label class="block text-xs font-bold text-mk-dark uppercase flex items-center gap-1.5">
+                    <i class="fa-solid fa-bullhorn text-mk-deep"></i> Texto de la Barra de Publicidad Superior (Desplazable)
+                </label>
+                <input type="text" name="texto_publicidad" value="{{ config_pago.texto_publicidad if config_pago and config_pago.texto_publicidad else '' }}" placeholder="Ej: ✨ ¡Bienvenidos a Beauty Store Mary Kay! Aprovecha un 10% OFF ✨" class="text-xs p-3 rounded-lg border bg-white focus:border-mk-pink focus:outline-none w-full font-medium">
+                <p class="text-[11px] text-gray-500">Este texto aparecerá en movimiento con efecto luminoso en la parte superior del sitio.</p>
+            </div>
+
+            <div class="flex items-center space-x-3 bg-white p-4 rounded-xl border border-gray-200">
+                <input type="checkbox" id="transferencia_activo" name="transferencia_activo" value="true" {% if config_pago and config_pago.transferencia_activo %}checked{% endif %} class="w-5 h-5 text-mk-deep rounded border-gray-300 focus:ring-mk-pink">
+                <div>
+                    <label for="transferencia_activo" class="text-xs font-bold text-mk-dark uppercase block cursor-pointer">Habilitar Descuento por Transferencia Bancaria</label>
+                    <p class="text-[11px] text-gray-500">Si se desactiva, los clientes podrán pagar por transferencia pero no se aplicará el porcentaje de descuento.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Porcentaje de Descuento (%)</label>
+                    <input type="number" step="0.1" name="transferencia_porcentaje" value="{{ config_pago.transferencia_porcentaje if config_pago else 10.0 }}" required class="text-xs p-3 rounded-lg border bg-white focus:border-mk-pink focus:outline-none w-full font-bold">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Entidad / Banco / Cartera</label>
+                    <input type="text" name="banco" value="{{ config_pago.banco if config_pago else 'Mercado Pago' }}" required class="text-xs p-3 rounded-lg border bg-white focus:border-mk-pink focus:outline-none w-full">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Titular de la Cuenta</label>
+                    <input type="text" name="titular" value="{{ config_pago.titular if config_pago else 'Dominguez Analia Alejandra.' }}" required class="text-xs p-3 rounded-lg border bg-white focus:border-mk-pink focus:outline-none w-full">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">CUIT / CUIL</label>
+                    <input type="text" name="cuit" value="{{ config_pago.cuit if config_pago else '27-23893486-4' }}" required class="text-xs p-3 rounded-lg border bg-white focus:border-mk-pink focus:outline-none w-full">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Alias de la Cuenta</label>
+                <input type="text" name="alias" value="{{ config_pago.alias if config_pago else 'ana.alejandra.1974' }}" required class="text-xs p-3 rounded-lg border bg-white focus:border-mk-pink focus:outline-none w-full font-bold text-mk-deep">
+            </div>
+
+            <button type="submit" class="bg-mk-dark hover:bg-mk-deep text-white text-xs font-bold px-6 py-3 rounded-xl transition shadow-md">
+                Guardar Configuración
+            </button>
+        </form>
+    </div>
+
+</div>
+
+<script>
+    function switchTab(tabName) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('border-mk-deep', 'text-mk-deep');
+            btn.classList.add('border-transparent', 'text-gray-400');
+        });
+        const activeTab = document.getElementById('tab-' + tabName);
+        if (activeTab) {
+            activeTab.classList.remove('hidden');
+        }
+        const activeBtn = document.getElementById('btn-' + tabName);
+        if (activeBtn) {
+            activeBtn.classList.remove('border-transparent', 'text-gray-400');
+            activeBtn.classList.add('border-mk-deep', 'text-mk-deep');
+        }
+    }
+
+    function togglePedidoEdit(pedidoId) {
+        const form = document.getElementById('edit-form-' + pedidoId);
+        if (form) {
+            form.classList.toggle('hidden');
+        }
+    }
+
+    function toggleProdEdit(prodId) {
+        const form = document.getElementById('edit-' + prodId);
+        if (form) {
+            form.classList.toggle('hidden');
+        }
+    }
+</script>
+{% endblock %}

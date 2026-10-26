@@ -153,6 +153,22 @@ def inicializar_configuracion_pago(db: Session):
         db.rollback()
         print(f"Aviso en inicialización de config pago: {e}")
 
+def limpiar_precio(precio_val) -> float:
+    if isinstance(precio_val, (int, float)):
+        return float(precio_val)
+    limpio = str(precio_val).strip()
+    # Maneja formato con puntos de miles y coma decimal (ej: 102.000,50 o 102000)
+    if "." in limpio and "," in limpio:
+        limpio = limpio.replace(".", "").replace(",", ".")
+    elif "," in limpio:
+        limpio = limpio.replace(",", ".")
+    elif limpio.count(".") > 1:
+        limpio = limpio.replace(".", "")
+    try:
+        return float(limpio)
+    except ValueError:
+        return 0.0
+
 @app.on_event("startup")
 def startup_event():
     db = database.SessionLocal()
