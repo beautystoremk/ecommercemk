@@ -22,6 +22,7 @@ from openpyxl import Workbook
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from fastapi import Response
+from sqlalchemy.exc import IntegrityError
 
 os.makedirs("static", exist_ok=True)
 os.makedirs("templates", exist_ok=True)
@@ -1406,8 +1407,14 @@ def eliminar_producto(
 ):
     producto = db.query(models.Producto).filter(models.Producto.id == producto_id).first()
     if producto:
-        db.delete(producto)
-        db.commit()
+        try:
+            db.delete(producto)
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            # Si tiene pedidos asociados, lo desactivamos automáticamente en lugar de dar error 500
+            producto.activo = False
+            db.commit()
     return RedirectResponse(url="/admin", status_code=status.HTTP_303_SEE_OTHER)
 
 @app.post("/admin/blog/crear")
