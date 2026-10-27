@@ -432,13 +432,16 @@ def enviar_correo_cliente_pedido(pedido, items):
         """
         msg.attach(MIMEText(cuerpo_html, 'html'))
 
-        try:
-            pdf_bytes = generar_recibo_pdf(pedido, items, DATOS_VENDEDOR)
-            adjunto_pdf = MIMEApplication(pdf_bytes, _subtype="pdf")
-            adjunto_pdf.add_header('Content-Disposition', 'attachment', filename=f"Recibo_BeautyStore_Pedido_{pedido.id}.pdf")
-            msg.attach(adjunto_pdf)
-        except Exception as pdf_err:
-            print(f"Error generando adjunto PDF: {pdf_err}")
+        # -------------------------------------------------------------------------
+        # COMENTAR ESTE BLOQUE PARA QUE NO SE ADJUNTE EL PDF AUTOMÁTICAMENTE:
+        # -------------------------------------------------------------------------
+        # try:
+        #     pdf_bytes = generar_recibo_pdf(pedido, items, DATOS_VENDEDOR)
+        #     adjunto_pdf = MIMEApplication(pdf_bytes, _subtype="pdf")
+        #     adjunto_pdf.add_header('Content-Disposition', 'attachment', filename=f"Recibo_BeautyStore_Pedido_{pedido.id}.pdf")
+        #     msg.attach(adjunto_pdf)
+        # except Exception as pdf_err:
+        #     print(f"Error generando adjunto PDF: {pdf_err}")
 
         server = smtplib.SMTP('smtp.gmail.com', 587)
         server.starttls()
