@@ -142,6 +142,9 @@ class ConfiguracionPago(Base):
     alias = Column(String(100), default="ana.alejandra.1974")
     banco = Column(String(100), default="Mercado Pago")
     texto_publicidad = Column(Text, default="")
+    descuento_volumen_activo = Column(Boolean, default=False)
+    descuento_volumen_minimo = Column(Float, default=0.0)
+    descuento_volumen_porcentaje = Column(Float, default=0.0)
 
 class EventoReunion(Base):
     __tablename__ = "eventos_reuniones"

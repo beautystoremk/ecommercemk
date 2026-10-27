@@ -188,7 +188,10 @@ def obtener_config_pago(db: Session):
             "cuit": "27-23893486-4",
             "alias": "ana.alejandra.1974",
             "banco": "Mercado Pago",
-            "texto_publicidad": ""
+            "texto_publicidad": "",
+            "descuento_volumen_activo": False,
+            "descuento_volumen_minimo": 0.0,
+            "descuento_volumen_porcentaje": 0.0
         }
     return {
         "transferencia_activo": config.transferencia_activo,
@@ -197,7 +200,10 @@ def obtener_config_pago(db: Session):
         "cuit": config.cuit,
         "alias": config.alias,
         "banco": config.banco,
-        "texto_publicidad": config.texto_publicidad or ""
+        "texto_publicidad": config.texto_publicidad or "",
+        "descuento_volumen_activo": config.descuento_volumen_activo,
+        "descuento_volumen_minimo": config.descuento_volumen_minimo,
+        "descuento_volumen_porcentaje": config.descuento_volumen_porcentaje
     }
 
 @app.middleware("http")
@@ -247,7 +253,8 @@ def home(request: Request, inscrito: bool = Query(False), db: Session = Depends(
     posts = db.query(models.BlogPost).filter(models.BlogPost.publicado == True).order_by(models.BlogPost.fecha.desc()).limit(3).all()
     
     evento_activo = db.query(models.EventoReunion).filter(models.EventoReunion.activo == True).order_by(models.EventoReunion.id.desc()).first()
-    
+    config_pago = obtener_config_pago(db)
+
     total_inscriptos = 0
     cupos_disponibles = 0
     porcentaje_lleno = 0
@@ -265,6 +272,7 @@ def home(request: Request, inscrito: bool = Query(False), db: Session = Depends(
         "productos": productos, 
         "posts": posts,
         "evento": evento_activo,
+        "datos_transferencia": config_pago,
         "total_inscriptos": total_inscriptos,
         "cupos_disponibles": cupos_disponibles,
         "porcentaje_lleno": porcentaje_lleno,
@@ -598,6 +606,17 @@ def procesar_checkout(
 
     subtotal_con_cupon = max(0.0, total_bruto - monto_descuento_cupon)
 
+    # Obtener configuración de pago para aplicar el descuento por volumen
+    config_pago_db = db.query(models.ConfiguracionPago).first()
+
+    # Cálculo del descuento automático por volumen
+    monto_descuento_volumen = 0.0
+    if config_pago_db and config_pago_db.descuento_volumen_activo:
+        if total_bruto >= config_pago_db.descuento_volumen_minimo:
+            monto_descuento_volumen = total_bruto * (config_pago_db.descuento_volumen_porcentaje / 100.0)
+
+    subtotal_con_descuentos = max(0.0, subtotal_con_cupon - monto_descuento_volumen)
+
     config_envio = db.query(models.ProvinciaEnvio).filter(
         models.ProvinciaEnvio.provincia == cliente_provincia,
         models.ProvinciaEnvio.activo == True
@@ -607,12 +626,11 @@ def procesar_checkout(
         raise HTTPException(status_code=400, detail="La provincia seleccionada no está disponible para envíos actualmente.")
 
     costo_envio = 0.0
-    if config_envio.gratis_desde and subtotal_con_cupon >= config_envio.gratis_desde:
+    if config_envio.gratis_desde and subtotal_con_descuentos >= config_envio.gratis_desde:
         costo_envio = 0.0
     else:
         costo_envio = config_envio.costo
 
-    config_pago_db = db.query(models.ConfiguracionPago).first()
     transferencia_activa = config_pago_db.transferencia_activo if config_pago_db else True
     porcentaje_transf = config_pago_db.transferencia_porcentaje if config_pago_db else 10.0
 
@@ -620,7 +638,7 @@ def procesar_checkout(
     if metodo_pago == "transferencia" and transferencia_activa:
         descuento_factor = (1 - porcentaje_transf / 100.0)
 
-    subtotal_con_descuento_transf = subtotal_con_cupon * descuento_factor
+    subtotal_con_descuento_transf = subtotal_con_descuentos * descuento_factor
     total_final = subtotal_con_descuento_transf + costo_envio
 
     nuevo_pedido = models.Pedido(
@@ -1021,6 +1039,9 @@ def admin_guardar_transferencia(
     cuit: str = Form(...),
     alias: str = Form(...),
     banco: str = Form(...),
+    descuento_volumen_activo: bool = Form(False),  # <--- Agregado
+    descuento_volumen_minimo: float = Form(0.0),   # <--- Agregado
+    descuento_volumen_porcentaje: float = Form(0.0),# <--- Agregado
     db: Session = Depends(database.get_db),
     auth: bool = Depends(verificar_admin)
 ):
@@ -1036,6 +1057,12 @@ def admin_guardar_transferencia(
     config.cuit = cuit
     config.alias = alias
     config.banco = banco
+    
+    # <--- Guardar también los valores de volumen
+    config.descuento_volumen_activo = descuento_volumen_activo
+    config.descuento_volumen_minimo = descuento_volumen_minimo or 0.0
+    config.descuento_volumen_porcentaje = descuento_volumen_porcentaje or 0.0
+    
     db.commit()
     
     return RedirectResponse(url="/admin", status_code=status.HTTP_303_SEE_OTHER)
@@ -1363,17 +1390,18 @@ def admin_eliminar_pedido(
 def crear_producto(
     nombre: str = Form(...),
     descripcion: str = Form(...),
-    precio: float = Form(...),
+    precio: str = Form(...),  # <--- Cambiado a str para parsear de forma segura
     descuento_porcentaje: float = Form(0.0),
     stock: int = Form(...),
     imagen_url: str = Form(...),
     db: Session = Depends(database.get_db),
     auth: bool = Depends(verificar_admin)
 ):
+    precio_limpio = limpiar_precio(precio)
     nuevo_prod = models.Producto(
         nombre=nombre, 
         descripcion=descripcion, 
-        precio=precio, 
+        precio=precio_limpio, 
         descuento_porcentaje=descuento_porcentaje or 0.0,
         stock=stock, 
         imagen_url=imagen_url, 
@@ -1388,7 +1416,7 @@ def editar_producto(
     producto_id: int,
     nombre: str = Form(...),
     descripcion: str = Form(...),
-    precio: float = Form(...),
+    precio: str = Form(...),  # <--- Cambiado a str
     descuento_porcentaje: float = Form(0.0),
     stock: int = Form(...),
     imagen_url: str = Form(...),
@@ -1400,7 +1428,7 @@ def editar_producto(
         raise HTTPException(status_code=404, detail="Producto no encontrado")
     producto.nombre = nombre
     producto.descripcion = descripcion
-    producto.precio = precio
+    producto.precio = limpiar_precio(precio)  # <--- Limpieza aplicada
     producto.descuento_porcentaje = descuento_porcentaje or 0.0
     producto.stock = stock
     producto.imagen_url = imagen_url
