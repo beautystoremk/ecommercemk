@@ -35,6 +35,11 @@
     <!-- FontAwesome para Íconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        html, body {
+            max-width: 100% !important;
+            overflow-x: hidden !important;
+            position: relative;
+        }
         @keyframes marquee {
             0% { transform: translateX(0%); }
             100% { transform: translateX(-50%); }
@@ -48,14 +53,14 @@
         }
     </style>
 </head>
-<body class="bg-mk-softgray font-sans-mk text-gray-800 antialiased flex flex-col min-h-screen">
+<body class="bg-mk-softgray font-sans-mk text-gray-800 antialiased flex flex-col min-h-screen overflow-x-hidden w-full relative">
 
     <!-- BARRA DE PUBLICIDAD SUPERIOR DESPLAZABLE -->
     <div class="bg-mk-deep text-white text-[11px] font-bold py-1.5 overflow-hidden whitespace-nowrap border-b border-white/10 shadow-inner relative z-50">
         <div class="animate-marquee tracking-wider uppercase">
-            <span>{{ texto_publicidad if texto_publicidad else '✨ 💖 ¡Bienvenidos a Beauty Store Mary Kay! 🛍️ Envíos gratis en compras seleccionadas y asesoría personalizada online 🚚 ✨' }}</span>
+            <span>{{ texto_publicidad if texto_publicidad else '✨ 💖 ¡Bienvenidos & a Beauty Store Mary Kay! 🛍️ Envíos gratis en compras seleccionadas y asesoría personalizada online 🚚 ✨' }}</span>
             &nbsp;&nbsp;&nbsp;&nbsp;&bull;&nbsp;&nbsp;&nbsp;&nbsp;
-            <span>{{ texto_publicidad if texto_publicidad else '✨ 💖 ¡Bienvenidos a Beauty Store Mary Kay! 🛍️ Envíos gratis en compras seleccionadas y asesoría personalizada online 🚚 ✨' }}</span>
+            <span>{{ texto_publicidad if texto_publicidad else '✨ 💖 ¡Bienvenidos & a Beauty Store Mary Kay! 🛍️ Envíos gratis en compras seleccionadas y asesoría personalizada online 🚚 ✨' }}</span>
         </div>
     </div>
 
@@ -443,7 +448,6 @@
                             <i class="fa-solid fa-money-bill-transfer text-mk-pink text-base"></i>
                             <div>
                                 <span class="font-bold block text-white">Transferencia Bancaria</span>
-                                
                             </div>
                         </div>
                         <div class="flex items-center space-x-3 text-xs bg-white/5 p-2.5 rounded-xl border border-white/10">
