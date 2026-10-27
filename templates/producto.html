@@ -48,6 +48,18 @@
 
                     <p class="text-gray-600 text-sm mt-3 leading-relaxed">{{ producto.descripcion }}</p>
 
+                    <!-- BANNER PUBLICITARIO DE DESCUENTO POR VOLUMEN -->
+                    {% if datos_transferencia and datos_transferencia.get('descuento_volumen_activo') %}
+                    <div class="mt-4 p-3.5 bg-mk-lightpink border-2 border-mk-deep rounded-2xl text-mk-dark text-xs text-center font-bold shadow-sm">
+                        <p class="text-xs flex items-center justify-center gap-1.5 text-mk-deep">
+                            <i class="fa-solid fa-percent text-sm"></i> ¡PROMO {{ datos_transferencia.get('descuento_volumen_porcentaje') }}% OFF POR VOLUMEN!
+                        </p>
+                        <p class="font-normal text-[11px] mt-1 text-gray-700">
+                            Superando los <strong>${{ "{:,.2f}".format(datos_transferencia.get('descuento_volumen_minimo', 0)) }}</strong> en tu carrito, obtenés un <strong>{{ datos_transferencia.get('descuento_volumen_porcentaje') }}% de descuento automático</strong>.
+                        </p>
+                    </div>
+                    {% endif %}
+
                     <div class="my-6 p-4 bg-mk-softgray rounded-xl border-l-4 border-mk-pink">
                         <div class="flex items-baseline space-x-3">
                             {% if producto.descuento_porcentaje and producto.descuento_porcentaje > 0 %}
@@ -205,7 +217,6 @@
         const precioBase = parseFloat(button.getAttribute('data-precio')) || 0;
         const descuento = parseFloat(button.getAttribute('data-descuento')) || 0;
         
-        // Calcular el precio real con el descuento directo del producto
         const precioFinal = descuento > 0 ? precioBase * (1 - descuento / 100) : precioBase;
 
         if (stockMaximo <= 0) {

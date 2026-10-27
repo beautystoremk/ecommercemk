@@ -11,7 +11,10 @@
     <div id="cart-container" 
          data-descuento="{{ datos_transferencia.descuento_porcentaje }}"
          data-activo="{{ 'true' if datos_transferencia.transferencia_activo else 'false' }}"
-         data-reglas="{{ reglas_envio_json }}">
+         data-reglas="{{ reglas_envio_json }}"
+         data-vol-activo="{{ 'true' if datos_transferencia.descuento_volumen_activo else 'false' }}"
+         data-vol-minimo="{{ datos_transferencia.descuento_volumen_minimo }}"
+         data-vol-porcentaje="{{ datos_transferencia.descuento_volumen_porcentaje }}">
     </div>
 </div>
 
@@ -67,6 +70,11 @@
 
         html += `</div>`;
 
+        // CARTEL PUBLICITARIO DINÁMICO DE DESCUENTO POR VOLUMEN EN EL CARRITO
+        html += `
+            <div id="banner-publicidad-volumen" class="mb-6 hidden"></div>
+        `;
+
         // SECCIÓN DE CUPÓN DE DESCUENTO
         html += `
             <div class="bg-mk-lightpink/30 p-4 rounded-xl border border-mk-pink mb-6">
@@ -90,6 +98,10 @@
                 <div id="row-descuento-cupon" class="flex justify-between text-sm text-green-700 font-bold hidden">
                     <span>Descuento Cupón (<span id="txt-codigo-cupon"></span>):</span>
                     <span id="resumen-cupon">-$0.00</span>
+                </div>
+                <div id="row-descuento-volumen" class="flex justify-between text-sm text-mk-deep font-bold hidden">
+                    <span>Descuento por Volumen (<span id="txt-vol-porcentaje"></span>% OFF):</span>
+                    <span id="resumen-descuento-volumen">-$0.00</span>
                 </div>
                 <div id="row-descuento-transferencia" class="flex justify-between text-sm text-mk-deep font-semibold ${TRANSFERENCIA_ACTIVA ? '' : 'hidden'}">
                     <span>Descuento por Transferencia (${DESCUENTO_PORCENTAJE}% OFF):</span>
@@ -215,6 +227,61 @@
 
         const subtotalConCupon = Math.max(0, subtotal - descCupon);
 
+        // --- PUBLICIDAD Y CÁLCULO DE DESCUENTO POR VOLUMEN ---
+        const volActivo = container.getAttribute('data-vol-activo') === 'true';
+        const volMinimo = parseFloat(container.getAttribute('data-vol-minimo')) || 0;
+        const volPorcentaje = parseFloat(container.getAttribute('data-vol-porcentaje')) || 0;
+
+        let descVolumen = 0;
+        const rowVolumen = document.getElementById('row-descuento-volumen');
+        const bannerVolumen = document.getElementById('banner-publicidad-volumen');
+
+        if (volActivo) {
+            if (subtotalConCupon >= volMinimo) {
+                descVolumen = subtotalConCupon * (volPorcentaje / 100.0);
+                if (rowVolumen) {
+                    document.getElementById('txt-vol-porcentaje').innerText = volPorcentaje;
+                    document.getElementById('resumen-descuento-volumen').innerText = '-$' + descVolumen.toLocaleString('es-AR', {minimumFractionDigits: 2});
+                    rowVolumen.classList.remove('hidden');
+                }
+                if (bannerVolumen) {
+                    bannerVolumen.className = 'mb-6 p-4 bg-emerald-50 border-2 border-emerald-500 rounded-2xl text-emerald-800 text-xs text-center font-bold shadow-sm';
+                    bannerVolumen.innerHTML = `
+                        <p class="text-sm flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-circle-check text-emerald-600 text-base"></i> 
+                            ¡FELICIDADES! ALCANZASTE EL DESCUENTO POR VOLUMEN
+                        </p>
+                        <p class="font-normal text-[11px] mt-1 text-emerald-700">
+                            Tu compra supera los $${volMinimo.toLocaleString('es-AR', {minimumFractionDigits: 2})} y se le ha aplicado un <strong>${volPorcentaje}% OFF automático</strong>.
+                        </p>
+                    `;
+                }
+            } else {
+                if (rowVolumen) {
+                    rowVolumen.classList.add('hidden');
+                }
+                if (bannerVolumen) {
+                    const falta = volMinimo - subtotalConCupon;
+                    bannerVolumen.className = 'mb-6 p-4 bg-mk-lightpink border-2 border-mk-deep rounded-2xl text-mk-dark text-xs text-center font-bold shadow-sm';
+                    bannerVolumen.innerHTML = `
+                        <p class="text-sm flex items-center justify-center gap-2 text-mk-deep">
+                            <i class="fa-solid fa-gift text-lg"></i> 
+                            ¡PROMO ${volPorcentaje}% OFF POR VOLUMEN!
+                        </p>
+                        <p class="font-semibold text-[11px] mt-1 text-gray-700">
+                            Agrega <strong>$${falta.toLocaleString('es-AR', {minimumFractionDigits: 2})}</strong> más a tu carrito para superar los $${volMinimo.toLocaleString('es-AR', {minimumFractionDigits: 2})} y obtener un <strong>${volPorcentaje}% de descuento automático</strong> en tu compra.
+                        </p>
+                    `;
+                }
+            }
+        } else {
+            if (rowVolumen) rowVolumen.classList.add('hidden');
+            if (bannerVolumen) bannerVolumen.classList.add('hidden');
+        }
+
+        const subtotalConVolumen = Math.max(0, subtotalConCupon - descVolumen);
+        // ----------------------------------------------------
+
         const provinciaSelect = document.getElementById('cliente_provincia');
         const provincia = provinciaSelect ? provinciaSelect.value : 'Mendoza';
         
@@ -228,15 +295,15 @@
         const regla = reglasEnvio[provincia];
 
         if (regla) {
-            if (regla.gratis_desde !== null && subtotalConCupon >= regla.gratis_desde) {
+            if (regla.gratis_desde !== null && subtotalConVolumen >= regla.gratis_desde) {
                 costoEnvio = 0.0;
             } else {
                 costoEnvio = regla.costo;
             }
         }
 
-        const descuentoTransf = (esTransferencia && TRANSFERENCIA_ACTIVA) ? subtotalConCupon * (DESCUENTO_PORCENTAJE / 100) : 0.0;
-        const totalFinal = (subtotalConCupon - descuentoTransf) + costoEnvio;
+        const descuentoTransf = (esTransferencia && TRANSFERENCIA_ACTIVA) ? subtotalConVolumen * (DESCUENTO_PORCENTAJE / 100) : 0.0;
+        const totalFinal = (subtotalConVolumen - descuentoTransf) + costoEnvio;
 
         document.getElementById('resumen-subtotal').innerText = '$' + subtotal.toLocaleString('es-AR', {minimumFractionDigits: 2});
         
@@ -273,7 +340,6 @@
 
         let nuevaCantidad = item.cantidad + delta;
 
-        // Validación estricta del stock máximo al aumentar desde el carrito
         if (delta > 0 && item.stock !== undefined && nuevaCantidad > item.stock) {
             alert(`No hay suficiente stock. El límite disponible para "${item.nombre}" es de ${item.stock} unidades.`);
             return;

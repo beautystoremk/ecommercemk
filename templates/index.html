@@ -7,7 +7,7 @@
 <div class="relative rounded-3xl overflow-hidden mb-16 shadow-2xl bg-mk-dark text-white p-8 md:p-20 flex items-center justify-center text-center">
     <!-- Video de Fondo -->
     <video autoplay muted loop playsinline class="absolute inset-0 w-full h-full object-cover opacity-35 pointer-events-none transition-all duration-700">
-        <source src="https://ennfuhqoqxroelcfklnk.supabase.co/storage/v1/object/public/media/uploads/mary-kay.mp4" type="video/mp4">
+        <source src="https://ennfuhqoqxroelcfklnk.supabase.co/storage/v1/object/public/media/uploads/videolineanueva.mp4" type="video/mp4">
     </video>
 
     <!-- Superposición elegante en degradé -->
@@ -132,7 +132,7 @@
                         </span>
                     </div>
 
-                    <!-- BARRA DE PROGRESO DE CUPOS (Sin errores CSS gracias a data-porcentaje) -->
+                    <!-- BARRA DE PROGRESO DE CUPOS -->
                     <div class="w-full bg-gray-100 h-3 rounded-full overflow-hidden">
                         <div id="barra-progreso-evento" class="bg-gradient-to-r from-mk-pink to-mk-deep h-full transition-all duration-1000" data-porcentaje="{{ porcentaje_lleno }}"></div>
                     </div>
@@ -189,7 +189,7 @@
 </section>
 {% endif %}
 
-<!-- SCRIPT PARA ASIGNAR EL ANCHO DE LA BARRA SIN CONFLICTOS CON EL LINTER CSS -->
+<!-- SCRIPT PARA ASIGNAR EL ANCHO DE LA BARRA -->
 <script>
     document.addEventListener("DOMContentLoaded", function() {
         const barra = document.getElementById("barra-progreso-evento");
@@ -203,6 +203,19 @@
 <!-- SECCIÓN: CATÁLOGO DE PRODUCTOS CON FILTROS PROFESIONALES E-COMMERCE -->
 <section id="catalogo" class="mb-20 scroll-mt-28 space-y-8">
     
+    <!-- AVISO / BANNER DE PROMOCIÓN AUTOMÁTICA POR VOLUMEN -->
+    {% if datos_transferencia and datos_transferencia.descuento_volumen_activo %}
+    <div class="bg-mk-lightpink border-2 border-mk-deep text-mk-dark p-4 md:p-5 rounded-3xl text-center shadow-md animate-fade-in">
+        <p class="font-serif-mk text-sm md:text-base font-bold flex items-center justify-center gap-2">
+            <i class="fa-solid fa-percent text-mk-deep text-lg"></i> 
+            ¡PROMO ESPECIAL POR VOLUMEN DE COMPRA! 
+        </p>
+        <p class="text-xs md:text-sm mt-1 text-gray-700">
+            Superando los <strong class="text-mk-deep font-extrabold">${{ "{:,.2f}".format(datos_transferencia.descuento_volumen_minimo) }}</strong> en tu carrito, obtenés un <strong class="text-mk-deep font-extrabold">{{ datos_transferencia.descuento_volumen_porcentaje }}% de descuento automático</strong> al finalizar tu compra.
+        </p>
+    </div>
+    {% endif %}
+
     <!-- Título de Sección -->
     <div class="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-mk-rosaviejo/30 pb-4 gap-2">
         <div>
@@ -468,5 +481,113 @@
         {% endfor %}
     </div>
 </section>
+{% endif %}
+
+<!-- VENTANA FLOTANTE EMERGENTE (MODAL PROMO) -->
+{% if datos_transferencia and (datos_transferencia.transferencia_activo or datos_transferencia.descuento_volumen_activo) %}
+<div id="modal-promo" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 md:p-8 shadow-2xl border-2 border-mk-pink relative transform scale-95 transition-transform duration-300" id="modal-promo-box">
+        
+        <!-- Botón para Cerrar (X) -->
+        <button onclick="cerrarModalPromo()" class="absolute top-4 right-4 text-gray-400 hover:text-mk-deep w-8 h-8 rounded-full bg-mk-softgray flex items-center justify-center transition">
+            <i class="fa-solid fa-xmark text-base"></i>
+        </button>
+
+        <!-- Encabezado del Modal -->
+        <div class="text-center space-y-2 mb-6">
+            <span class="inline-block bg-mk-lightpink text-mk-deep font-extrabold text-[10px] uppercase tracking-widest px-3 py-1 rounded-full">
+                ✨ ¡BENEFICIOS EXCLUSIVOS! ✨
+            </span>
+            <h3 class="font-serif-mk text-2xl font-bold text-mk-dark">Aprovecha Nuestras Promociones</h3>
+            <p class="text-xs text-gray-500">Descuentos acumulables para tus compras de hoy</p>
+        </div>
+
+        <!-- Tarjetas de Descuentos -->
+        <div class="space-y-3 mb-6">
+            
+            <!-- TARJETA 1: DESCUENTO POR VOLUMEN -->
+            {% if datos_transferencia.descuento_volumen_activo %}
+            <div class="p-4 bg-gradient-to-r from-mk-lightpink to-white rounded-2xl border border-mk-pink/40 flex items-center space-x-3 shadow-sm">
+                <div class="w-12 h-12 rounded-xl bg-mk-deep text-white flex items-center justify-center text-xl shrink-0 font-bold">
+                    <i class="fa-solid fa-gift"></i>
+                </div>
+                <div>
+                    <span class="text-xs font-bold text-mk-deep uppercase block">
+                        {{ datos_transferencia.descuento_volumen_porcentaje }}% OFF Automático
+                    </span>
+                    <p class="text-[11px] text-gray-700 leading-tight">
+                        En compras superiores a <strong>${{ "{:,.2f}".format(datos_transferencia.descuento_volumen_minimo) }}</strong>. Se aplica solo al carrito.
+                    </p>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- TARJETA 2: DESCUENTO POR TRANSFERENCIA -->
+            {% if datos_transferencia.transferencia_activo %}
+            <div class="p-4 bg-gradient-to-r from-purple-50 to-white rounded-2xl border border-purple-200 flex items-center space-x-3 shadow-sm">
+                <div class="w-12 h-12 rounded-xl bg-purple-700 text-white flex items-center justify-center text-xl shrink-0 font-bold">
+                    <i class="fa-solid fa-building-columns"></i>
+                </div>
+                <div>
+                    <span class="text-xs font-bold text-purple-800 uppercase block">
+                        {{ datos_transferencia.descuento_porcentaje }}% OFF Extra
+                    </span>
+                    <p class="text-[11px] text-gray-700 leading-tight">
+                        Abonando tu pedido por <strong>Transferencia Bancaria o MP</strong>.
+                    </p>
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+
+        <!-- Botón para ir a comprar -->
+        <button onclick="cerrarModalPromo()" class="w-full bg-mk-dark hover:bg-mk-deep text-white font-bold py-3.5 rounded-xl text-xs uppercase tracking-wider transition shadow-md flex items-center justify-center space-x-2">
+            <i class="fa-solid fa-bag-shopping"></i>
+            <span>¡Entendido, Ir de Compras!</span>
+        </button>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Verificar si la clienta ya cerró el modal en las últimas 24 horas
+        const modalVisto = localStorage.getItem('promo_modal_visto_fecha');
+        const hoy = new Date().toDateString();
+
+        if (modalVisto !== hoy) {
+            // Espera 1.5 segundos antes de mostrar la ventana flotante para un efecto suave
+            setTimeout(() => {
+                const modal = document.getElementById('modal-promo');
+                const box = document.getElementById('modal-promo-box');
+                if (modal && box) {
+                    modal.classList.remove('hidden');
+                    setTimeout(() => {
+                        modal.classList.remove('opacity-0');
+                        box.classList.remove('scale-95');
+                        box.classList.add('scale-100');
+                    }, 50);
+                }
+            }, 1500);
+        }
+    });
+
+    function cerrarModalPromo() {
+        const modal = document.getElementById('modal-promo');
+        const box = document.getElementById('modal-promo-box');
+        if (modal && box) {
+            modal.classList.add('opacity-0');
+            box.classList.remove('scale-100');
+            box.classList.add('scale-95');
+            
+            // Guardar que la usuaria ya vio la promo hoy para no molestarla de nuevo
+            localStorage.setItem('promo_modal_visto_fecha', new Date().toDateString());
+
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+    }
+</script>
 {% endif %}
 {% endblock %}
