@@ -441,7 +441,7 @@
             </div>
             <div>
                 <label class="block text-xs font-semibold text-gray-600 mb-1">Precio ($)</label>
-                <input type="number" step="0.01" name="precio" placeholder="Precio" required class="text-xs p-2.5 rounded-lg border bg-white w-full">
+                <input type="text" name="precio" placeholder="Ej: 102000" required class="text-xs p-2.5 rounded-lg border bg-white w-full">
             </div>
             <div>
                 <label class="block text-xs font-semibold text-gray-600 mb-1">% Descuento</label>
@@ -515,7 +515,7 @@
                         <div class="grid grid-cols-3 gap-2">
                             <div>
                                 <label class="block text-[9px] font-bold text-gray-500">Precio ($)</label>
-                                <input type="number" step="0.01" name="precio" value="{{ prod.precio }}" required class="text-xs p-1.5 border rounded w-full">
+                                <input type="text" name="precio" value="{{ prod.precio }}" required class="text-xs p-1.5 border rounded w-full">
                             </div>
                             <div>
                                 <label class="block text-[9px] font-bold text-gray-500">% Descuento</label>
@@ -781,6 +781,27 @@
                 </label>
                 <input type="text" name="texto_publicidad" value="{{ config_pago.texto_publicidad if config_pago and config_pago.texto_publicidad else '' }}" placeholder="Ej: ✨ ¡Bienvenidos a Beauty Store Mary Kay! Aprovecha un 10% OFF ✨" class="text-xs p-3 rounded-lg border bg-white focus:border-mk-pink focus:outline-none w-full font-medium">
                 <p class="text-[11px] text-gray-500">Este texto aparecerá en movimiento con efecto luminoso en la parte superior del sitio.</p>
+            </div>
+
+            <!-- DESCUENTO AUTOMÁTICO POR VOLUMEN DE COMPRA -->
+            <div class="bg-white p-4 rounded-xl border border-gray-200 space-y-3">
+                <h3 class="font-bold text-xs text-mk-dark uppercase flex items-center gap-1.5">
+                    <i class="fa-solid fa-percent text-mk-deep"></i> Descuento Automático por Volumen de Compra
+                </h3>
+                <div class="flex items-center space-x-3">
+                    <input type="checkbox" id="descuento_volumen_activo" name="descuento_volumen_activo" value="true" {% if config_pago and config_pago.descuento_volumen_activo %}checked{% endif %} class="w-4 h-4 text-mk-deep rounded border-gray-300">
+                    <label for="descuento_volumen_activo" class="text-xs font-bold text-gray-700 cursor-pointer">Activar descuento automático por monto total</label>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Monto Mínimo de Compra ($)</label>
+                        <input type="number" step="0.01" name="descuento_volumen_minimo" value="{{ config_pago.descuento_volumen_minimo if config_pago else 0.0 }}" placeholder="Ej: 100000" class="text-xs p-2.5 rounded-lg border bg-white w-full">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Porcentaje de Descuento (%)</label>
+                        <input type="number" step="0.1" name="descuento_volumen_porcentaje" value="{{ config_pago.descuento_volumen_porcentaje if config_pago else 0.0 }}" placeholder="Ej: 5" class="text-xs p-2.5 rounded-lg border bg-white w-full font-bold">
+                    </div>
+                </div>
             </div>
 
             <div class="flex items-center space-x-3 bg-white p-4 rounded-xl border border-gray-200">
