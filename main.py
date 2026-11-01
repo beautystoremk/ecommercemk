@@ -25,6 +25,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from fastapi import Response
 from sqlalchemy.exc import IntegrityError
+from dotenv import load_dotenv
 
 os.makedirs("static", exist_ok=True)
 os.makedirs("templates", exist_ok=True)
@@ -53,7 +54,7 @@ DATOS_VENDEDOR = {
 }
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
-
+load_dotenv()
 # Inicialización del cliente oficial de Gemini
 client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
@@ -1659,11 +1660,18 @@ def eliminar_post(
 def crear_carrusel_item(
     titulo: str = Form(""),
     imagen_url: str = Form(...),
+    tipo_media: str = Form("imagen"),
     orden: int = Form(0),
     db: Session = Depends(database.get_db),
     auth: bool = Depends(verificar_admin)
 ):
-    nuevo_item = models.CarruselItem(titulo=titulo, imagen_url=imagen_url, orden=orden, activo=True)
+    nuevo_item = models.CarruselItem(
+        titulo=titulo, 
+        imagen_url=imagen_url, 
+        tipo_media=tipo_media, 
+        orden=orden, 
+        activo=True
+    )
     db.add(nuevo_item)
     db.commit()
     return RedirectResponse(url="/admin", status_code=status.HTTP_303_SEE_OTHER)
@@ -1673,6 +1681,7 @@ def editar_carrusel_item(
     item_id: int,
     titulo: str = Form(""),
     imagen_url: str = Form(...),
+    tipo_media: str = Form("imagen"),
     orden: int = Form(0),
     db: Session = Depends(database.get_db),
     auth: bool = Depends(verificar_admin)
@@ -1681,6 +1690,7 @@ def editar_carrusel_item(
     if item:
         item.titulo = titulo
         item.imagen_url = imagen_url
+        item.tipo_media = tipo_media
         item.orden = orden
         db.commit()
     return RedirectResponse(url="/admin", status_code=status.HTTP_303_SEE_OTHER)
