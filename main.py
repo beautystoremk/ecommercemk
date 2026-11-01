@@ -6,6 +6,8 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import mercadopago
+from google import genai
+from google.genai import types
 from fastapi import FastAPI, Request, Depends, Form, HTTPException, status, Cookie, File, UploadFile, Query
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
@@ -51,6 +53,9 @@ DATOS_VENDEDOR = {
 }
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Inicialización del cliente oficial de Gemini
+client = genai.Client(api_key="AQ.Ab8RN6ISpBBrEson1Y1VqwFRlxtGFjn6NlRnl8Mq9lRDc8xJWA")
 
 class GlobalJinja2Templates(Jinja2Templates):
     def TemplateResponse(self, *args, **kwargs):
@@ -157,7 +162,6 @@ def limpiar_precio(precio_val) -> float:
     if isinstance(precio_val, (int, float)):
         return float(precio_val)
     limpio = str(precio_val).strip()
-    # Maneja formato con puntos de miles y coma decimal (ej: 102.000,50 o 102000)
     if "." in limpio and "," in limpio:
         limpio = limpio.replace(".", "").replace(",", ".")
     elif "," in limpio:
@@ -306,7 +310,6 @@ def inscribir_evento(
     db.add(nueva_inscripcion)
     db.commit()
 
-    # Enviar correo de notificación al administrador
     try:
         msg = MIMEMultipart()
         msg['From'] = EMAIL_EMISOR
@@ -322,7 +325,6 @@ def inscribir_evento(
     except Exception as e:
         print(f"Error al enviar notificación de inscripción: {e}")
 
-    # Redirigir al WhatsApp de la oradora con el mensaje pre-llenado
     mensaje_wa = (
         f"¡Hola! Me acabo de inscribir al evento *{evento.titulo}*.\n\n"
         f"👤 *Nombre:* {nombre_cliente}\n"
@@ -432,17 +434,6 @@ def enviar_correo_cliente_pedido(pedido, items):
         """
         msg.attach(MIMEText(cuerpo_html, 'html'))
 
-        # -------------------------------------------------------------------------
-        # COMENTAR ESTE BLOQUE PARA QUE NO SE ADJUNTE EL PDF AUTOMÁTICAMENTE:
-        # -------------------------------------------------------------------------
-        # try:
-        #     pdf_bytes = generar_recibo_pdf(pedido, items, DATOS_VENDEDOR)
-        #     adjunto_pdf = MIMEApplication(pdf_bytes, _subtype="pdf")
-        #     adjunto_pdf.add_header('Content-Disposition', 'attachment', filename=f"Recibo_BeautyStore_Pedido_{pedido.id}.pdf")
-        #     msg.attach(adjunto_pdf)
-        # except Exception as pdf_err:
-        #     print(f"Error generando adjunto PDF: {pdf_err}")
-
         server = smtplib.SMTP('smtp.gmail.com', 587)
         server.starttls()
         server.login(EMAIL_EMISOR, EMAIL_PASSWORD)
@@ -522,6 +513,165 @@ def agregar_resena(
     db.add(nueva_resena)
     db.commit()
     return RedirectResponse(url=f"/producto/{producto_id}", status_code=status.HTTP_303_SEE_OTHER)
+
+# Endpoint del Asistente de IA (Gemini - google-genai)
+# Endpoint del Asistente de IA (Versión Asíncrona)
+# Endpoint del Asistente de IA con soporte de Blog y modo asíncrono
+@app.post("/api/chat")
+async def endpoint_chat_ia(mensaje: str = Form(...), db: Session = Depends(database.get_db)):
+    try:
+        # 1. Obtener catálogo de productos activos
+        productos = db.query(models.Producto).filter(models.Producto.activo == True).all()
+        catalogo_info = "\n".join([
+            f"- ID {p.id}: {p.nombre} | Precio: ${p.precio:,.2f} | Stock: {p.stock} | Descripción: {p.descripcion}" 
+            for p in productos
+        ])
+
+        # 2. Obtener configuración de pagos y provincias de envío
+        config_pago = obtener_config_pago(db)
+        provincias = db.query(models.ProvinciaEnvio).filter(models.ProvinciaEnvio.activo == True).all()
+        envios_info = "\n".join([
+            f"- {e.provincia}: Costo ${e.costo:,.2f} (Gratis desde ${e.gratis_desde if e.gratis_desde else 'No aplica'})" 
+            for e in provincias
+        ])
+
+        # 3. Obtener artículos publicados del Blog
+        posts = db.query(models.BlogPost).filter(models.BlogPost.publicado == True).all()
+        blog_info = "\n".join([
+            f"- Título: {p.titulo} | Subtítulo: {p.subtitulo} | Contenido: {p.contenido[:300]}..." 
+            for p in posts
+        ])
+
+        porcentaje_desc = config_pago.get('descuento_porcentaje', 10.0)
+
+        # 4. Instrucciones del sistema enriquecidas con el Blog
+        system_instruction = f"""
+        Eres 'Giuli', la asesora virtual experta en belleza y vendedora de la tienda online 'BEAUTY STORE en Mendoza| Mary Kay'.
+        Tu tono debe ser amable, cálido, profesional y usar emojis acordes a una tienda de cosméticos (✨, 💖, 🛍️).
+        
+        Ayuda al cliente a elegir productos, explícale cómo comprar, pagar por Mercado Pago o transferencia Bancaria al alias de la consultora luego de realizar el pedido de compra, aprovechar si hay descuento por transferencia ({porcentaje_desc}% OFF).
+        También puedes responder dudas y dar consejos basándote en los artículos publicados en nuestro blog oficial de belleza y catalogo de productos.
+
+        --- CATÁLOGO DE PRODUCTOS DISPONIBLES ---
+        {catalogo_info if catalogo_info else "No hay productos cargados actualmente."}
+
+        --- ARTÍCULOS Y CONSEJOS DEL BLOG ---
+        {blog_info if blog_info else "No hay artículos publicados en el blog actualmente."}
+
+        --- COSTOS Y REGLAS DE ENVÍO ---
+        {envios_info}
+
+        --- MÉTODOS DE PAGO ---
+        - Mercado Pago (Redirección).
+        - Transferencia bancaria (Aplica {porcentaje_desc}% de descuento).
+        
+        Responde de forma concisa (máximo 3 o 4 párrafos cortos) y orienta siempre al cliente a concretar su compra, leer más en el blog o resolver su duda de forma práctica.
+        """
+
+        # Llamada asíncrona a Gemini con el modelo actual
+        response = await client.aio.models.generate_content(
+            model="gemini-3.8-flash",
+            contents=mensaje,
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction
+            )
+        )
+        
+        respuesta_ia = response.text if response.text else "¡Hola! ¿En qué puedo ayudarte hoy con tus productos Mary Kay?"
+
+        return {"respuesta": respuesta_ia}
+
+    except Exception as e:
+        print(f"❌ ERROR EXACTO EN EL CHAT: {type(e).__name__} - {str(e)}")
+        
+        error_str = str(e)
+        if "503" in error_str or "UNAVAILABLE" in error_str:
+            return {
+                "respuesta": "¡Hola! En este momento tengo muchísimas consultas y los servidores de atención están a pleno. Podes explorar los productos en el catálogo o escribirme directamente por WhatsApp para asesorarte al instante. 💖✨"
+            }
+            
+        return {
+            "respuesta": "¡Hola! Estoy un poco ocupada atendiendo el catálogo, pero podés consultarme por nuestros productos, envíos o medios de pago en cualquier momento. 💖"
+        }
+# Endpoint exclusivo para generar el QR en pantalla (MODO / Mercado Pago)
+@app.post("/api/generar-qr-pago")
+def generar_qr_pago(
+    cart_data: str = Form(...),
+    cliente_nombre: str = Form(...),
+    cliente_email: str = Form(...),
+    cliente_telefono: str = Form(...),
+    cliente_dni: str = Form(...),
+    cliente_direccion: str = Form(...),
+    cliente_localidad: str = Form(...),
+    cliente_codigo_postal: str = Form(""),
+    cliente_provincia: str = Form(...),
+    cupon_codigo: str = Form(None),
+    db: Session = Depends(database.get_db)
+):
+    try:
+        items = json.loads(cart_data)
+    except:
+        raise HTTPException(status_code=400, detail="Carrito inválido")
+
+    total_bruto = sum(float(item["precio"]) * int(item["cantidad"]) for item in items)
+    
+    config_envio = db.query(models.ProvinciaEnvio).filter(models.ProvinciaEnvio.provincia == cliente_provincia).first()
+    costo_envio = config_envio.costo if config_envio else 0.0
+    
+    total_final = total_bruto + costo_envio
+
+    nuevo_pedido = models.Pedido(
+        cliente_nombre=cliente_nombre,
+        cliente_email=cliente_email,
+        cliente_telefono=cliente_telefono,
+        cliente_dni=cliente_dni,
+        cliente_direccion=cliente_direccion,
+        cliente_localidad=cliente_localidad,
+        cliente_provincia=cliente_provincia,
+        cliente_codigo_postal=cliente_codigo_postal,
+        metodo_pago="qr_modo",
+        estado_pago="Pendiente",
+        total=total_final,
+        costo_envio=costo_envio,
+        fecha=datetime.utcnow() - timedelta(hours=3)
+    )
+    db.add(nuevo_pedido)
+    db.commit()
+    db.refresh(nuevo_pedido)
+
+    preference_data = {
+        "items": [
+            {
+                "title": f"Compra Beauty Store - Pedido #{nuevo_pedido.id}",
+                "quantity": 1,
+                "unit_price": float(total_final),
+                "currency_id": "ARS"
+            }
+        ],
+        "payer": {
+            "name": cliente_nombre,
+            "email": cliente_email
+        },
+        "external_reference": str(nuevo_pedido.id),
+        "back_urls": {
+            "success": f"http://localhost:8000/confirmacion/{nuevo_pedido.id}",
+            "pending": f"http://localhost:8000/confirmacion/{nuevo_pedido.id}",
+            "failure": f"http://localhost:8000/confirmacion/{nuevo_pedido.id}"
+        },
+        "auto_return": "approved"
+    }
+
+    try:
+        preference_response = mp_sdk.preference().create(preference_data)
+        response_body = preference_response.get("response", {})
+        init_point = response_body.get("init_point")
+        
+        return {
+            "pedido_id": nuevo_pedido.id,
+            "init_point": init_point
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al generar QR de pago: {str(e)}")
 
 @app.post("/checkout", response_class=HTMLResponse)
 def procesar_checkout(
@@ -609,10 +759,8 @@ def procesar_checkout(
 
     subtotal_con_cupon = max(0.0, total_bruto - monto_descuento_cupon)
 
-    # Obtener configuración de pago para aplicar el descuento por volumen
     config_pago_db = db.query(models.ConfiguracionPago).first()
 
-    # Cálculo del descuento automático por volumen
     monto_descuento_volumen = 0.0
     if config_pago_db and config_pago_db.descuento_volumen_activo:
         if total_bruto >= config_pago_db.descuento_volumen_minimo:
@@ -837,7 +985,6 @@ def admin_dashboard(
         }
     )
 
-# RUTAS ADMINISTRATIVAS DE EVENTOS, REUNIONES E INSCRIPTOS
 @app.post("/admin/eventos/crear")
 def admin_crear_evento(
     titulo: str = Form(...),
@@ -1042,9 +1189,9 @@ def admin_guardar_transferencia(
     cuit: str = Form(...),
     alias: str = Form(...),
     banco: str = Form(...),
-    descuento_volumen_activo: bool = Form(False),  # <--- Agregado
-    descuento_volumen_minimo: float = Form(0.0),   # <--- Agregado
-    descuento_volumen_porcentaje: float = Form(0.0),# <--- Agregado
+    descuento_volumen_activo: bool = Form(False),
+    descuento_volumen_minimo: float = Form(0.0),
+    descuento_volumen_porcentaje: float = Form(0.0),
     db: Session = Depends(database.get_db),
     auth: bool = Depends(verificar_admin)
 ):
@@ -1061,7 +1208,6 @@ def admin_guardar_transferencia(
     config.alias = alias
     config.banco = banco
     
-    # <--- Guardar también los valores de volumen
     config.descuento_volumen_activo = descuento_volumen_activo
     config.descuento_volumen_minimo = descuento_volumen_minimo or 0.0
     config.descuento_volumen_porcentaje = descuento_volumen_porcentaje or 0.0
@@ -1393,7 +1539,7 @@ def admin_eliminar_pedido(
 def crear_producto(
     nombre: str = Form(...),
     descripcion: str = Form(...),
-    precio: str = Form(...),  # <--- Cambiado a str para parsear de forma segura
+    precio: str = Form(...),
     descuento_porcentaje: float = Form(0.0),
     stock: int = Form(...),
     imagen_url: str = Form(...),
@@ -1419,7 +1565,7 @@ def editar_producto(
     producto_id: int,
     nombre: str = Form(...),
     descripcion: str = Form(...),
-    precio: str = Form(...),  # <--- Cambiado a str
+    precio: str = Form(...),
     descuento_porcentaje: float = Form(0.0),
     stock: int = Form(...),
     imagen_url: str = Form(...),
@@ -1431,7 +1577,7 @@ def editar_producto(
         raise HTTPException(status_code=404, detail="Producto no encontrado")
     producto.nombre = nombre
     producto.descripcion = descripcion
-    producto.precio = limpiar_precio(precio)  # <--- Limpieza aplicada
+    producto.precio = limpiar_precio(precio)
     producto.descuento_porcentaje = descuento_porcentaje or 0.0
     producto.stock = stock
     producto.imagen_url = imagen_url
@@ -1459,7 +1605,6 @@ def eliminar_producto(
             db.commit()
         except IntegrityError:
             db.rollback()
-            # Si tiene pedidos asociados, lo desactivamos automáticamente en lugar de dar error 500
             producto.activo = False
             db.commit()
     return RedirectResponse(url="/admin", status_code=status.HTTP_303_SEE_OTHER)
