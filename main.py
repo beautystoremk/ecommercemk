@@ -55,7 +55,7 @@ DATOS_VENDEDOR = {
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Inicialización del cliente oficial de Gemini
-client = genai.Client(api_key="AQ.Ab8RN6ISpBBrEson1Y1VqwFRlxtGFjn6NlRnl8Mq9lRDc8xJWA")
+client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 class GlobalJinja2Templates(Jinja2Templates):
     def TemplateResponse(self, *args, **kwargs):
