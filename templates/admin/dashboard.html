@@ -624,25 +624,32 @@
     <div id="tab-carrusel" class="tab-content hidden">
         <h2 class="font-serif-mk text-xl font-bold text-mk-dark mb-4">Gestión del Carrusel Flotante</h2>
         
-        <form action="/admin/carrusel/crear" method="POST" class="bg-mk-softgray p-4 rounded-xl border border-mk-lightpink mb-6 grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
-            <div>
-                <label class="block text-xs font-semibold text-gray-600 mb-1">Título / Descripción</label>
-                <input type="text" name="titulo" placeholder="Ej: Promoción Especial" class="text-xs p-2.5 rounded-lg border bg-white w-full">
-            </div>
-            <div>
-                <label class="block text-xs font-semibold text-gray-600 mb-1">URL Imagen</label>
-                <input type="text" name="imagen_url" placeholder="https://..." required class="text-xs p-2.5 rounded-lg border bg-white w-full">
-            </div>
-            <div>
-                <label class="block text-xs font-semibold text-gray-600 mb-1">Orden</label>
-                <input type="number" name="orden" value="0" class="text-xs p-2.5 rounded-lg border bg-white w-full">
-            </div>
-            <div class="sm:col-span-3">
-                <button type="submit" class="bg-mk-dark hover:bg-mk-deep text-white text-xs font-bold px-5 py-2.5 rounded-xl transition">
-                    Agregar Elemento
-                </button>
-            </div>
-        </form>
+        <form action="/admin/carrusel/crear" method="POST" class="bg-mk-softgray p-4 rounded-xl border border-mk-lightpink mb-6 grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+    <div>
+        <label class="block text-xs font-semibold text-gray-600 mb-1">Título / Descripción</label>
+        <input type="text" name="titulo" placeholder="Ej: Promoción Especial" class="text-xs p-2.5 rounded-lg border bg-white w-full">
+    </div>
+    <div>
+        <label class="block text-xs font-semibold text-gray-600 mb-1">URL Archivo (Imagen / Video)</label>
+        <input type="text" name="imagen_url" placeholder="https://..." required class="text-xs p-2.5 rounded-lg border bg-white w-full">
+    </div>
+    <div>
+        <label class="block text-xs font-semibold text-gray-600 mb-1">Tipo de Media</label>
+        <select name="tipo_media" class="text-xs p-2.5 rounded-lg border bg-white w-full font-semibold">
+            <option value="imagen">Imagen</option>
+            <option value="video">Video</option>
+        </select>
+    </div>
+    <div>
+        <label class="block text-xs font-semibold text-gray-600 mb-1">Orden</label>
+        <input type="number" name="orden" value="0" class="text-xs p-2.5 rounded-lg border bg-white w-full">
+    </div>
+    <div class="sm:col-span-4">
+        <button type="submit" class="bg-mk-dark hover:bg-mk-deep text-white text-xs font-bold px-5 py-2.5 rounded-xl transition">
+            Agregar Elemento
+        </button>
+    </div>
+</form>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {% for item in carrusel_admin_items %}
@@ -664,29 +671,36 @@
     <div id="tab-promos" class="tab-content hidden">
         <h2 class="font-serif-mk text-xl font-bold text-mk-dark mb-4">Gestión de Banners Promocionales y Ofertas</h2>
         
-        <form action="/admin/banners/crear" method="POST" class="bg-mk-softgray p-4 rounded-xl border border-mk-lightpink mb-6 grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
-            <div>
-                <label class="block text-xs font-semibold text-gray-600 mb-1">Título</label>
-                <input type="text" name="titulo" placeholder="Ej: Banner Descuento" class="text-xs p-2.5 rounded-lg border bg-white w-full">
-            </div>
-            <div>
-                <label class="block text-xs font-semibold text-gray-600 mb-1">URL Multimedia</label>
-                <input type="text" name="media_url" placeholder="https://..." required class="text-xs p-2.5 rounded-lg border bg-white w-full">
-            </div>
-            <div>
-                <label class="block text-xs font-semibold text-gray-600 mb-1">Enlace de Destino</label>
-                <input type="text" name="enlace_url" placeholder="/producto/1" class="text-xs p-2.5 rounded-lg border bg-white w-full">
-            </div>
-            <div>
-                <label class="block text-xs font-semibold text-gray-600 mb-1">Orden</label>
-                <input type="number" name="orden" value="0" class="text-xs p-2.5 rounded-lg border bg-white w-full">
-            </div>
-            <div class="sm:col-span-4">
-                <button type="submit" class="bg-mk-dark hover:bg-mk-deep text-white text-xs font-bold px-5 py-2.5 rounded-xl transition">
-                    Crear Banner
-                </button>
-            </div>
-        </form>
+        <form action="/admin/banners/crear" method="POST" class="bg-mk-softgray p-4 rounded-xl border border-mk-lightpink mb-6 grid grid-cols-1 sm:grid-cols-5 gap-3 items-end">
+    <div>
+        <label class="block text-xs font-semibold text-gray-600 mb-1">Título</label>
+        <input type="text" name="titulo" placeholder="Ej: Banner Descuento" class="text-xs p-2.5 rounded-lg border bg-white w-full">
+    </div>
+    <div>
+        <label class="block text-xs font-semibold text-gray-600 mb-1">URL Multimedia</label>
+        <input type="text" name="media_url" placeholder="https://..." required class="text-xs p-2.5 rounded-lg border bg-white w-full">
+    </div>
+    <div>
+        <label class="block text-xs font-semibold text-gray-600 mb-1">Tipo de Media</label>
+        <select name="tipo_media" class="text-xs p-2.5 rounded-lg border bg-white w-full font-semibold">
+            <option value="imagen">Imagen</option>
+            <option value="video">Video</option>
+        </select>
+    </div>
+    <div>
+        <label class="block text-xs font-semibold text-gray-600 mb-1">Enlace de Destino</label>
+        <input type="text" name="enlace_url" placeholder="/producto/1" class="text-xs p-2.5 rounded-lg border bg-white w-full">
+    </div>
+    <div>
+        <label class="block text-xs font-semibold text-gray-600 mb-1">Orden</label>
+        <input type="number" name="orden" value="0" class="text-xs p-2.5 rounded-lg border bg-white w-full">
+    </div>
+    <div class="sm:col-span-5">
+        <button type="submit" class="bg-mk-dark hover:bg-mk-deep text-white text-xs font-bold px-5 py-2.5 rounded-xl transition">
+            Crear Banner
+        </button>
+    </div>
+</form>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {% for banner in banners_admin %}
