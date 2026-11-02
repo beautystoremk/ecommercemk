@@ -466,6 +466,11 @@ def detalle_producto(request: Request, producto_id: int, db: Session = Depends(d
     producto = db.query(models.Producto).filter(models.Producto.id == producto_id).first()
     if not producto:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
+    # ── NUEVO: Obtener productos relacionados (activos y distintos al actual) ──
+    productos_relacionados = db.query(models.Producto).filter(
+        models.Producto.id != producto_id,
+        models.Producto.activo == True
+    ).limit(3).all()
     resenas = db.query(models.Resena).filter(
         models.Resena.producto_id == producto_id,
         models.Resena.aprobado == True
@@ -483,6 +488,7 @@ def detalle_producto(request: Request, producto_id: int, db: Session = Depends(d
 
     return templates.TemplateResponse(request, "producto.html", {
         "producto": producto,
+        "productos_relacionados": productos_relacionados,
         "precio_base": precio_base,
         "precio_transferencia": precio_transferencia,
         "datos_transferencia": config_pago,
