@@ -126,6 +126,41 @@
         </div>
     </div>
 
+<!-- SECCIÓN DE PRODUCTOS RELACIONADOS -->
+    {% if productos_relacionados %}
+    <div class="mt-16 border-t border-mk-lightpink pt-10">
+        <h3 class="font-serif-mk text-2xl font-bold text-mk-dark mb-6 text-center">Te puede interesar también</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            {% for rel in productos_relacionados %}
+            <div class="bg-white rounded-2xl shadow-sm border border-mk-lightpink p-4 flex flex-col justify-between group hover:shadow-md transition">
+                <div>
+                    <div class="w-full h-48 rounded-xl overflow-hidden mb-4 bg-gray-50 relative">
+                        <img src="{{ rel.imagen_url }}" alt="{{ rel.nombre }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                    </div>
+                    <h4 class="font-bold text-sm text-mk-dark line-clamp-1">{{ rel.nombre }}</h4>
+                    <p class="text-xs text-gray-500 line-clamp-2 mt-1">{{ rel.descripcion }}</p>
+                </div>
+                
+                <div class="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between">
+                    <div>
+                        {% if rel.descuento_porcentaje and rel.descuento_porcentaje > 0 %}
+                            {% set precio_rel = rel.precio * (1 - rel.descuento_porcentaje / 100) %}
+                            <span class="text-sm font-bold text-mk-deep">${{ "{:,.2f}".format(precio_rel) }}</span>
+                            <span class="text-[10px] text-gray-400 line-through block">${{ "{:,.2f}".format(rel.precio) }}</span>
+                        {% else %}
+                            <span class="text-sm font-bold text-mk-deep">${{ "{:,.2f}".format(rel.precio) }}</span>
+                        {% endif %}
+                    </div>
+                    <a href="/producto/{{ rel.id }}" class="bg-mk-dark hover:bg-mk-deep text-white text-xs font-bold px-3 py-2 rounded-xl transition shadow-sm">
+                        Ver Detalle
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
     <!-- SECCIÓN DE RESEÑAS Y OPINIONES -->
     <div class="bg-white rounded-2xl shadow-sm border border-mk-lightpink p-6 md:p-10">
         <h3 class="font-serif-mk text-xl font-bold text-mk-dark mb-6">Opiniones y Calificaciones</h3>
@@ -263,4 +298,6 @@
         window.location.href = '/carrito';
     }
 </script>
+
+
 {% endblock %}
