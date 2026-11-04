@@ -62,11 +62,14 @@
         </a>
     </div>
 
+    <!-- El botón de descarga en PDF solo se muestra si NO es transferencia -->
+    {% if pedido.metodo_pago != 'transferencia' %}
     <div class="mt-6 text-center">
-    <a href="/pedido/{{ pedido.id }}/recibo-pdf" target="_blank" class="inline-flex items-center gap-2 bg-mk-dark hover:bg-mk-deep text-white text-xs font-bold px-6 py-3 rounded-xl transition shadow-md">
-        <i class="fa-solid fa-file-pdf text-base"></i> Descargar Recibo Formal (PDF)
-    </a>
-</div>
+        <a href="/pedido/{{ pedido.id }}/recibo-pdf" target="_blank" class="inline-flex items-center gap-2 bg-mk-dark hover:bg-mk-deep text-white text-xs font-bold px-6 py-3 rounded-xl transition shadow-md">
+            <i class="fa-solid fa-file-pdf text-base"></i> Descargar Recibo Formal (PDF)
+        </a>
+    </div>
+    {% endif %}
 
 </div>
 
