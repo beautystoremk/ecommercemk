@@ -53,7 +53,137 @@
         }
     </style>
 </head>
+
 <body class="bg-mk-softgray font-sans-mk text-gray-800 antialiased flex flex-col min-h-screen overflow-x-hidden w-full relative">
+
+    <!-- BANNER DINÁMICO SUPERIOR: GLOBAL Y ADAPTABLE -->
+    {% if promo_activa and promo_activa.activo %}
+        {% set bg_classes = "bg-gray-900 border-b border-white/20 text-white relative overflow-hidden" %}
+        {% set badge_classes = "bg-mk-pink text-mk-dark font-black border border-white/40 shadow-md" %}
+        {% set text_classes = "bg-black/35 p-4 rounded-2xl backdrop-blur-md border border-white/20 shadow-xl text-left" %}
+        {% set timer_classes = "bg-black/45 text-white border border-white/40 backdrop-blur-md shadow-2xl" %}
+
+        <div id="promo-banner" 
+             class="{{ bg_classes }} py-6 md:py-8 px-4 md:px-8 text-sm md:text-base font-medium shadow-2xl transition-all duration-300 relative z-50 min-h-[140px] flex items-center justify-center">
+            
+            <!-- IMAGEN DE FONDO ADAPTABLE (Cubre todo el ancho sin franjas) -->
+            {% if promo_activa.imagen_fondo and promo_activa.imagen_fondo.strip() != '' %}
+                <img src="{{ promo_activa.imagen_fondo }}" alt="Fondo Promoción" class="absolute inset-0 w-full h-full object-cover object-center pointer-events-none z-0">
+                <!-- Capa semitransparente para legibilidad perfecta de los textos -->
+                <div class="absolute inset-0 bg-black/50 backdrop-blur-[1px] pointer-events-none z-0"></div>
+            {% endif %}
+
+            <div class="max-w-7xl w-full mx-auto flex flex-col lg:flex-row items-center justify-between gap-6 relative z-10">
+                
+                <!-- SECCIÓN IZQUIERDA: LOGO O BADGE + TEXTO -->
+                <div class="flex flex-col sm:flex-row items-center sm:items-start gap-4 max-w-3xl">
+                    
+                    <div class="flex flex-col items-center sm:items-start gap-2 flex-shrink-0">
+                        {% if promo_activa.logo_url and promo_activa.logo_url.strip() != '' %}
+                            <div class="bg-white/90 p-2 rounded-xl shadow-md border border-white/40 backdrop-blur-sm">
+                                <img src="{{ promo_activa.logo_url }}" alt="Logo Campaña" class="h-10 md:h-12 w-auto object-contain max-w-[150px]">
+                            </div>
+                        {% else %}
+                            <span class="{{ badge_classes }} text-base md:text-lg font-black px-5 py-2 rounded-full uppercase tracking-wider shadow-lg">
+                                {% if promo_activa.estilo == 'cyberweek' %}CYBER MONDAY{% elif promo_activa.estilo == 'hotsale' %}HOT SALE{% elif promo_activa.estilo == 'gold' %}SPECIAL VIP{% else %}OFERTA RELÁMPAGO{% endif %}
+                            </span>
+                        {% endif %}
+
+                        <!-- LOGOS DE CONFIANZA E-COMMERCE -->
+                        <div class="flex items-center gap-2 text-[10px] text-white/80 bg-black/40 px-2.5 py-1 rounded-lg border border-white/10 backdrop-blur-sm">
+                            <span title="Pagos Seguros"><i class="fa-solid fa-shield-halved text-green-400"></i> Pago Seguro</span>
+                            <span>&bull;</span>
+                            <span title="Tarjetas y Cuotas"><i class="fa-solid fa-credit-card text-blue-400"></i> Cuotas</span>
+                            <span>&bull;</span>
+                            <span title="Envíos a todo el país"><i class="fa-solid fa-truck-fast text-amber-400"></i> Envíos</span>
+                        </div>
+                    </div>
+
+                    <!-- TEXTO MULTILÍNEA -->
+                    <div class="{{ text_classes }} flex-grow w-full">
+                        <div class="font-bold text-sm md:text-base leading-relaxed whitespace-pre-line drop-shadow">
+                            {{ promo_activa.texto }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN DERECHA: RELOJ REGRESIVO Y BOTÓN -->
+                <div class="flex flex-col sm:flex-row items-center gap-4 flex-shrink-0">
+                    
+                    {% if promo_activa.fecha_fin %}
+                    <div class="flex items-center gap-2 font-mono text-sm md:text-base {{ timer_classes }} px-5 py-2.5 rounded-2xl shadow-2xl">
+                        <div class="flex flex-col items-center">
+                            <span id="timer-days" class="font-black text-base md:text-xl leading-none">00</span>
+                            <span class="text-[9px] opacity-80 uppercase tracking-widest font-semibold">Días</span>
+                        </div>
+                        <span class="opacity-70 text-xl leading-none font-bold">:</span>
+                        <div class="flex flex-col items-center">
+                            <span id="timer-hours" class="font-black text-base md:text-xl leading-none">00</span>
+                            <span class="text-[9px] opacity-80 uppercase tracking-widest font-semibold">Hs</span>
+                        </div>
+                        <span class="opacity-70 text-xl leading-none font-bold">:</span>
+                        <div class="flex flex-col items-center">
+                            <span id="timer-minutes" class="font-black text-base md:text-xl leading-none">00</span>
+                            <span class="text-[9px] opacity-80 uppercase tracking-widest font-semibold">Min</span>
+                        </div>
+                        <span class="opacity-70 text-xl leading-none font-bold">:</span>
+                        <div class="flex flex-col items-center">
+                            <span id="timer-seconds" class="font-black text-base md:text-xl leading-none text-mk-pink">00</span>
+                            <span class="text-[9px] opacity-80 uppercase tracking-widest font-semibold">Seg</span>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if promo_activa.boton_texto and promo_activa.boton_enlace %}
+                    <a href="{{ promo_activa.boton_enlace }}" class="bg-mk-pink hover:bg-white text-mk-dark hover:text-mk-deep text-xs md:text-sm font-extrabold px-6 py-3.5 rounded-2xl shadow-xl transition-all duration-300 transform hover:scale-105 border-2 border-white/50 text-center block whitespace-nowrap">
+                        {{ promo_activa.boton_texto }} <i class="fa-solid fa-arrow-right-long ml-1"></i>
+                    </a>
+                    {% endif %}
+
+                </div>
+
+            </div>
+        </div>
+
+        <!-- SCRIPT EXCLUSIVO PARA EL TEMPORIZADOR -->
+        {% if promo_activa.fecha_fin %}
+        <script>
+            (function() {
+                const fechaFinStr = "{{ promo_activa.fecha_fin.isoformat() }}";
+                const fechaObjetivo = new Date(fechaFinStr).getTime();
+
+                function actualizarReloj() {
+                    const ahora = new Date().getTime();
+                    const diferencia = fechaObjetivo - ahora;
+
+                    if (diferencia <= 0) {
+                        const banner = document.getElementById('promo-banner');
+                        if (banner) banner.style.display = 'none';
+                        return;
+                    }
+
+                    const dias = Math.floor(diferencia / (1000 * 60 * 60 * 24));
+                    const horas = Math.floor((diferencia % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutos = Math.floor((diferencia % (1000 * 60 * 60)) / (1000 * 60));
+                    const segundos = Math.floor((diferencia % (1000 * 60)) / 1000);
+
+                    const elDias = document.getElementById('timer-days');
+                    const elHoras = document.getElementById('timer-hours');
+                    const elMinutos = document.getElementById('timer-minutes');
+                    const elSegundos = document.getElementById('timer-seconds');
+
+                    if (elDias) elDias.innerText = String(dias).padStart(2, '0');
+                    if (elHoras) elHoras.innerText = String(horas).padStart(2, '0');
+                    if (elMinutos) elMinutos.innerText = String(minutos).padStart(2, '0');
+                    if (elSegundos) elSegundos.innerText = String(segundos).padStart(2, '0');
+                }
+
+                actualizarReloj();
+                setInterval(actualizarReloj, 1000);
+            })();
+        </script>
+        {% endif %}
+    {% endif %}
 
     <!-- BARRA DE PUBLICIDAD SUPERIOR DESPLAZABLE -->
     <div class="bg-mk-deep text-white text-[11px] font-bold py-1.5 overflow-hidden whitespace-nowrap border-b border-white/10 shadow-inner relative z-50">
