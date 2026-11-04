@@ -854,6 +854,67 @@
                 Guardar Configuración
             </button>
         </form>
+
+        <!-- Formulario de Configuración de Oferta Relámpago y Cuenta Regresiva (Cyber Monday) -->
+        <!-- Control y Configuración del Banner Cyber Monday / Oferta Relámpago -->
+<div class="bg-white p-6 rounded-2xl shadow-sm border border-mk-pink/40 mt-6 space-y-4">
+    <div class="border-b border-gray-100 pb-3">
+        <h3 class="font-serif-mk text-lg font-bold text-mk-dark">Banner Promocional Principal (Cyber Monday / Oferta)</h3>
+        <p class="text-xs text-gray-500">Configura la imagen de fondo, textos multilínea, marcas/logos integrados y el botón a productos.</p>
+    </div>
+
+    <form action="/admin/promo/actualizar" method="POST" class="space-y-4">
+        
+        <div class="flex items-center gap-3 bg-mk-softgray p-3.5 rounded-xl border border-gray-200">
+            <input type="checkbox" id="activo_promo" name="activo" value="true" {% if promo_activa and promo_activa.activo %}checked{% endif %} class="w-5 h-5 text-mk-deep rounded border-gray-300 focus:ring-mk-pink cursor-pointer">
+            <label for="activo_promo" class="text-xs font-bold text-mk-dark cursor-pointer">
+                🟢 Activar Banner en la parte superior de la tienda (Desmarcar para ocultar de forma manual)
+            </label>
+        </div>
+        
+        <div>
+            <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Texto del Banner (Permite múltiples renglones / Enter)</label>
+            <textarea name="texto" rows="3" class="w-full border border-gray-300 rounded-xl p-3 text-xs focus:outline-none focus:border-mk-deep bg-mk-softgray font-medium" required>{{ promo_activa.texto if promo_activa else '🔥 ¡20% OFF en toda la línea TimeWise!&#10;✨ Aprovechá envíos gratis en compras seleccionadas.' }}</textarea>
+        </div>
+
+        <div>
+            <label class="block text-xs font-bold text-gray-600 uppercase mb-1">URL de la Imagen de Fondo (Reemplaza los colores sólidos)</label>
+            <input type="text" name="imagen_fondo" value="{{ promo_activa.imagen_fondo if promo_activa and promo_activa.imagen_fondo else '' }}" placeholder="https://ennfuhqoqxroelcfklnk.supabase.co/storage/v1/object/public/media/..." class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-mk-deep bg-mk-softgray">
+            <p class="text-[10px] text-gray-400 mt-1">Sube la imagen a Supabase y pega la URL aquí. Si está llena, la imagen se mostrará automáticamente.</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+                <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Texto del Botón de Acción (Opcional)</label>
+                <input type="text" name="boton_texto" value="{{ promo_activa.boton_texto if promo_activa and promo_activa.boton_texto else 'VER OFERTAS NOW 🛍️' }}" placeholder="Ej: Comprar Oferta" class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-mk-deep bg-mk-softgray">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Enlace del Botón (Página / Producto específico)</label>
+                <input type="text" name="boton_enlace" value="{{ promo_activa.boton_enlace if promo_activa and promo_activa.boton_enlace else '/#catalogo' }}" placeholder="Ej: /#catalogo o /producto/5" class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-mk-deep bg-mk-softgray">
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+                <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Estilo de Respaldo (Si no usas imagen)</label>
+                <select name="estilo" class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-mk-deep bg-mk-softgray cursor-pointer">
+                    <option value="cyberweek" {% if promo_activa and promo_activa.estilo == 'cyberweek' %}selected{% endif %}>🤖 CyberWeek (Fondo Oscuro Neón)</option>
+                    <option value="hotsale" {% if promo_activa and promo_activa.estilo == 'hotsale' %}selected{% endif %}>🔥 Hot Sale (Fondo Naranja / Rojo)</option>
+                    <option value="marykay" {% if promo_activa and promo_activa.estilo == 'marykay' %}selected{% endif %}>💖 Mary Kay Classic (Fondo Rosa / Violeta)</option>
+                    <option value="gold" {% if promo_activa and promo_activa.estilo == 'gold' %}selected{% endif %}>✨ Black Gold (Fondo Negro con Dorado)</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Fecha y Hora Límite (Fin de la Promoción)</label>
+                <input type="datetime-local" name="fecha_fin" value="{{ promo_activa.fecha_fin.strftime('%Y-%m-%dT%H:%M') if promo_activa and promo_activa.fecha_fin else '' }}" class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-mk-deep bg-mk-softgray">
+            </div>
+        </div>
+
+        <button type="submit" class="bg-mk-dark hover:bg-mk-deep text-white text-xs font-bold px-5 py-3 rounded-xl transition shadow-md flex items-center gap-2">
+            <i class="fa-solid fa-floppy-disk"></i> Guardar Configuración de Banner
+        </button>
+    </form>
+</div>
     </div>
 
 </div>
