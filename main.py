@@ -259,7 +259,7 @@ def home(request: Request, inscrito: bool = Query(False), db: Session = Depends(
     
     evento_activo = db.query(models.EventoReunion).filter(models.EventoReunion.activo == True).order_by(models.EventoReunion.id.desc()).first()
     config_pago = obtener_config_pago(db)
-
+    promo_activa = db.query(models.ConfiguracionPromo).first()
     total_inscriptos = 0
     cupos_disponibles = 0
     porcentaje_lleno = 0
@@ -278,6 +278,7 @@ def home(request: Request, inscrito: bool = Query(False), db: Session = Depends(
         "posts": posts,
         "evento": evento_activo,
         "datos_transferencia": config_pago,
+        "promo_activa": promo_activa,
         "total_inscriptos": total_inscriptos,
         "cupos_disponibles": cupos_disponibles,
         "porcentaje_lleno": porcentaje_lleno,
@@ -383,9 +384,33 @@ def enviar_correo_nuevo_pedido(pedido, items):
         msg['From'] = EMAIL_EMISOR
         msg['To'] = EMAIL_DESTINO
         msg['Subject'] = f"🚨 ¡Nuevo Pedido #{pedido.id} Recibido! - BEAUTY STORE"
+        
+        items_texto = ""
         for item in items:
             subtotal = item["precio_unitario"] * item["cantidad"]
-        cuerpo = f"Pedido ID: #{pedido.id}\nCliente: {pedido.cliente_nombre}\nTotal: ${pedido.total:,.2f}"
+            items_texto += f"- {item['producto'].nombre} x{item['cantidad']} (${subtotal:,.2f})\n"
+
+        cuerpo = f"""¡Hola Analía! Has recibido un nuevo pedido en la tienda web.
+
+--- DATOS DEL PEDIDO #{pedido.id} ---
+Método de Pago: {pedido.metodo_pago.upper()}
+Estado del Pago: {pedido.estado_pago}
+Total Final: ${pedido.total:,.2f}
+Costo de Envío: ${pedido.costo_envio:,.2f}
+
+--- DATOS DEL CLIENTE Y ENVÍO ---
+Nombre: {pedido.cliente_nombre}
+Email: {pedido.cliente_email or 'No provisto'}
+Teléfono / WhatsApp: {pedido.cliente_telefono}
+DNI / CUIT: {pedido.cliente_dni}
+Dirección: {pedido.cliente_direccion}
+Localidad: {pedido.cliente_localidad}
+Provincia: {pedido.cliente_provincia}
+Código Postal: {pedido.cliente_codigo_postal or 'No provisto'}
+
+--- PRODUCTOS ---
+{items_texto}
+"""
         msg.attach(MIMEText(cuerpo, 'plain'))
         server = smtplib.SMTP('smtp.gmail.com', 587)
         server.starttls()
@@ -393,7 +418,7 @@ def enviar_correo_nuevo_pedido(pedido, items):
         server.send_message(msg)
         server.quit()
     except Exception as e:
-        print(f"Error al enviar correo de notificación: {e}")
+        print(f"Error al enviar correo de notificación al vendedor: {e}")
 
 def enviar_correo_cliente_pedido(pedido, items):
     try:
@@ -442,6 +467,68 @@ def enviar_correo_cliente_pedido(pedido, items):
         server.quit()
     except Exception as e:
         print(f"Error al enviar correo de confirmación al cliente: {e}")
+
+def enviar_correo_cliente_transferencia_resumen(pedido, items, datos_pago):
+    try:
+        if not pedido.cliente_email:
+            return
+            
+        msg = MIMEMultipart()
+        msg['From'] = EMAIL_EMISOR
+        msg['To'] = pedido.cliente_email
+        msg['Subject'] = f"✨ Resumen de tu pedido #{pedido.id} y datos de pago - BEAUTY STORE"
+
+        items_texto = ""
+        for item in items:
+            subtotal = item["precio_unitario"] * item["cantidad"]
+            items_texto += f"- {item['producto'].nombre} x{item['cantidad']} (${subtotal:,.2f})\n"
+
+        cuerpo_html = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
+            <div style="max-width: 600px; margin: 0 auto; border: 1px solid #e8a0bf; border-radius: 12px; padding: 20px; background-color: #fafafa;">
+                <h2 style="color: #c2185b; text-align: center;">BEAUTY STORE | Mary Kay</h2>
+                <p>¡Hola <strong>{pedido.cliente_nombre}</strong>!</p>
+                <p>Hemos registrado tu pedido <strong>#{pedido.id}</strong> con éxito. Aquí tienes el respaldo de tu compra y los datos para realizar la transferencia:</p>
+                
+                <div style="background-color: #ffffff; padding: 15px; border-radius: 8px; border: 1px solid #f9f0f5; margin: 15px 0;">
+                    <h3 style="color: #222; margin-top: 0;">Datos Bancarios / Pago</h3>
+                    <p><strong>Banco:</strong> {datos_pago.get('banco', 'Mercado Pago')}<br/>
+                    <strong>Titular:</strong> {datos_pago.get('titular', '')}<br/>
+                    <strong>CUIT:</strong> {datos_pago.get('cuit', '')}<br/>
+                    <strong>Alias:</strong> <span style="color: #c2185b; font-size: 16px; font-weight: bold;">{datos_pago.get('alias', '')}</span><br/>
+                    <strong>Total a Transferir:</strong> <span style="font-size: 16px; font-weight: bold;">${pedido.total:,.2f}</span></p>
+                </div>
+
+                <div style="background-color: #ffffff; padding: 15px; border-radius: 8px; border: 1px solid #f9f0f5; margin: 15px 0;">
+                    <h3 style="color: #222; margin-top: 0;">Resumen del Pedido #{pedido.id}</h3>
+                    <p style="font-size: 13px; color: #555; white-space: pre-line;">{items_texto}</p>
+                    <p><strong>Costo de Envío:</strong> ${pedido.costo_envio:,.2f}<br/>
+                    <strong>Total Final:</strong> ${pedido.total:,.2f}</p>
+                </div>
+
+                <p style="font-size: 13px; color: #666; text-align: center;">
+                    Una vez realizada la transferencia, envíanos el comprobante por WhatsApp para que podamos verificarlo.
+                </p>
+
+                <div style="text-align: center; margin-top: 20px;">
+                    <a href="https://wa.me/5492616142896" style="background-color: #25d366; color: white; padding: 10px 20px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+                        Enviar Comprobante por WhatsApp
+                    </a>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        msg.attach(MIMEText(cuerpo_html, 'html'))
+
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(EMAIL_EMISOR, EMAIL_PASSWORD)
+        server.send_message(msg)
+        server.quit()
+    except Exception as e:
+        print(f"Error al enviar correo de resumen de transferencia al cliente: {e}")
 
 @app.get("/carrito", response_class=HTMLResponse)
 def ver_carrito(request: Request, db: Session = Depends(database.get_db)):
@@ -620,13 +707,36 @@ def generar_qr_pago(
     except:
         raise HTTPException(status_code=400, detail="Carrito inválido")
 
-    total_bruto = sum(float(item["precio"]) * int(item["cantidad"]) for item in items)
+    if not items:
+        raise HTTPException(status_code=400, detail="El carrito está vacío")
+
+    total_bruto = 0.0
+    items_procesados = []
+
+    # 1. Validar stock y procesar ítems
+    for item in items:
+        prod = db.query(models.Producto).filter(models.Producto.id == item["id"]).first()
+        if not prod or prod.stock < item["cantidad"]:
+            raise HTTPException(status_code=400, detail=f"Stock insuficiente para: {prod.nombre if prod else 'Producto'}")
+        
+        precio_unitario = prod.precio
+        if prod.descuento_porcentaje and prod.descuento_porcentaje > 0:
+            precio_unitario = prod.precio * (1 - prod.descuento_porcentaje / 100.0)
+
+        subtotal_item = precio_unitario * item["cantidad"]
+        total_bruto += subtotal_item
+        items_procesados.append({
+            "producto": prod, 
+            "cantidad": item["cantidad"], 
+            "precio_unitario": precio_unitario,
+            "subtotal": subtotal_item
+        })
     
     config_envio = db.query(models.ProvinciaEnvio).filter(models.ProvinciaEnvio.provincia == cliente_provincia).first()
     costo_envio = config_envio.costo if config_envio else 0.0
-    
     total_final = total_bruto + costo_envio
 
+    # 2. Crear pedido principal con estado Pendiente
     nuevo_pedido = models.Pedido(
         cliente_nombre=cliente_nombre,
         cliente_email=cliente_email,
@@ -646,6 +756,17 @@ def generar_qr_pago(
     db.commit()
     db.refresh(nuevo_pedido)
 
+    # 3. Guardar detalles del pedido (SIN descontar stock y SIN enviar correos; se delega al webhook)
+    for item in items_procesados:
+        detalle = models.PedidoDetalle(
+            pedido_id=nuevo_pedido.id,
+            producto_id=item["producto"].id,
+            cantidad=item["cantidad"],
+            precio_unitario=item["precio_unitario"]
+        )
+        db.add(detalle)
+    db.commit()
+
     preference_data = {
         "items": [
             {
@@ -664,8 +785,7 @@ def generar_qr_pago(
             "success": f"http://localhost:8000/confirmacion/{nuevo_pedido.id}",
             "pending": f"http://localhost:8000/confirmacion/{nuevo_pedido.id}",
             "failure": f"http://localhost:8000/confirmacion/{nuevo_pedido.id}"
-        },
-        "auto_return": "approved"
+        }
     }
 
     try:
@@ -673,12 +793,258 @@ def generar_qr_pago(
         response_body = preference_response.get("response", {})
         init_point = response_body.get("init_point")
         
+        if not init_point:
+            raise Exception(f"Respuesta inválida de Mercado Pago: {preference_response}")
+
         return {
             "pedido_id": nuevo_pedido.id,
             "init_point": init_point
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al generar QR de pago: {str(e)}")
+
+@app.post("/api/procesar-pago-tarjeta")
+def procesar_pago_tarjeta(
+    token: str = Form(...),
+    payment_method_id: str = Form(...),
+    installments: int = Form(1),
+    issuer_id: str = Form(None),
+    payer_email: str = Form(...),
+    cart_data: str = Form(...),
+    cliente_nombre: str = Form(...),
+    cliente_telefono: str = Form(...),
+    cliente_dni: str = Form(...),
+    cliente_direccion: str = Form(...),
+    cliente_localidad: str = Form(...),
+    cliente_codigo_postal: str = Form(""),
+    cliente_provincia: str = Form(...),
+    cupon_codigo: str = Form(None),
+    db: Session = Depends(database.get_db)
+):
+    try:
+        items = json.loads(cart_data)
+    except:
+        raise HTTPException(status_code=400, detail="Carrito inválido")
+
+    if not items:
+        raise HTTPException(status_code=400, detail="El carrito está vacío")
+
+    total_bruto = 0.0
+    items_procesados = []
+
+    # 1. Validar stock y calcular precios
+    for item in items:
+        prod = db.query(models.Producto).filter(models.Producto.id == item["id"]).first()
+        if not prod or prod.stock < item["cantidad"]:
+            raise HTTPException(status_code=400, detail=f"Stock insuficiente para: {prod.nombre if prod else 'Producto'}")
+        
+        precio_unitario = prod.precio
+        if prod.descuento_porcentaje and prod.descuento_porcentaje > 0:
+            precio_unitario = prod.precio * (1 - prod.descuento_porcentaje / 100.0)
+
+        subtotal_item = precio_unitario * item["cantidad"]
+        total_bruto += subtotal_item
+        items_procesados.append({
+            "producto": prod, 
+            "cantidad": item["cantidad"], 
+            "precio_unitario": precio_unitario,
+            "subtotal": subtotal_item
+        })
+
+    config_envio = db.query(models.ProvinciaEnvio).filter(
+        models.ProvinciaEnvio.provincia == cliente_provincia,
+        models.ProvinciaEnvio.activo == True
+    ).first()
+    costo_envio = config_envio.costo if config_envio else 0.0
+    total_final = total_bruto + costo_envio
+
+    # 2. Crear pedido preliminar en base de datos
+    nuevo_pedido = models.Pedido(
+        cliente_nombre=cliente_nombre,
+        cliente_email=payer_email,
+        cliente_telefono=cliente_telefono,
+        cliente_dni=cliente_dni,
+        cliente_direccion=cliente_direccion,
+        cliente_localidad=cliente_localidad,
+        cliente_provincia=cliente_provincia,
+        cliente_codigo_postal=cliente_codigo_postal,
+        metodo_pago="tarjeta_credito",
+        estado_pago="Pendiente",
+        total=total_final,
+        costo_envio=costo_envio,
+        fecha=datetime.utcnow() - timedelta(hours=3)
+    )
+    db.add(nuevo_pedido)
+    db.commit()
+    db.refresh(nuevo_pedido)
+
+    # 3. Guardar detalles y descontar stock inmediatamente
+    for item in items_procesados:
+        detalle = models.PedidoDetalle(
+            pedido_id=nuevo_pedido.id,
+            producto_id=item["producto"].id,
+            cantidad=item["cantidad"],
+            precio_unitario=item["precio_unitario"]
+        )
+        db.add(detalle)
+        item["producto"].stock -= item["cantidad"]
+    db.commit()
+
+    # 4. Enviar el pago a la API de Mercado Pago
+    payment_data = {
+        "transaction_amount": float(total_final),
+        "token": token,
+        "description": f"Compra Beauty Store - Pedido #{nuevo_pedido.id}",
+        "installments": int(installments),
+        "payment_method_id": payment_method_id,
+        "issuer_id": issuer_id if issuer_id else None,
+        "payer": {
+            "email": payer_email,
+            "identification": {"type": "DNI", "number": cliente_dni}
+        },
+        "external_reference": str(nuevo_pedido.id)
+    }
+
+    try:
+        payment_response = mp_sdk.payment().create(payment_data)
+        response_body = payment_response.get("response", {})
+        status_pago = response_body.get("status")
+
+        if status_pago == "approved":
+            nuevo_pedido.estado_pago = "Aprobado"
+            db.commit()
+
+            # Enviar correos de confirmación al aprobarse
+            enviar_correo_nuevo_pedido(nuevo_pedido, items_procesados)
+            enviar_correo_cliente_pedido(nuevo_pedido, items_procesados)
+
+            return {"status": "approved", "pedido_id": nuevo_pedido.id}
+        elif status_pago == "in_process":
+            nuevo_pedido.estado_pago = "Pendiente"
+            db.commit()
+            return {"status": "in_process", "pedido_id": nuevo_pedido.id}
+        else:
+            razon = response_body.get("status_detail", "Pago rechazado por la entidad.")
+            nuevo_pedido.estado_pago = "Rechazado"
+            
+            # Si el pago con tarjeta es rechazado, devolvemos el stock al inventario
+            for item in items_procesados:
+                item["producto"].stock += item["cantidad"]
+            db.commit()
+            
+            raise HTTPException(status_code=400, detail=f"Pago no aprobado: {razon}")
+
+    except Exception as e:
+        # En caso de error general con la API, revertimos el stock descontado
+        for item in items_procesados:
+            item["producto"].stock += item["cantidad"]
+        db.commit()
+        
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(status_code=500, detail=f"Error al procesar la tarjeta: {str(e)}")
+
+@app.post("/api/procesar-pago-tarjeta")
+def procesar_pago_tarjeta(
+    token: str = Form(...),
+    payment_method_id: str = Form(...),
+    installments: int = Form(1),
+    issuer_id: str = Form(None),
+    payer_email: str = Form(...),
+    cart_data: str = Form(...),
+    cliente_nombre: str = Form(...),
+    cliente_telefono: str = Form(...),
+    cliente_dni: str = Form(...),
+    cliente_direccion: str = Form(...),
+    cliente_localidad: str = Form(...),
+    cliente_codigo_postal: str = Form(""),
+    cliente_provincia: str = Form(...),
+    cupon_codigo: str = Form(None),
+    db: Session = Depends(database.get_db)
+):
+    try:
+        items = json.loads(cart_data)
+    except:
+        raise HTTPException(status_code=400, detail="Carrito inválido")
+
+    if not items:
+        raise HTTPException(status_code=400, detail="El carrito está vacío")
+
+    total_bruto = sum(float(item["precio"]) * int(item["cantidad"]) for item in items)
+    
+    config_envio = db.query(models.ProvinciaEnvio).filter(
+        models.ProvinciaEnvio.provincia == cliente_provincia,
+        models.ProvinciaEnvio.activo == True
+    ).first()
+    costo_envio = config_envio.costo if config_envio else 0.0
+    total_final = total_bruto + costo_envio
+
+    # Crear el pedido preliminar en base de datos
+    nuevo_pedido = models.Pedido(
+        cliente_nombre=cliente_nombre,
+        cliente_email=payer_email,
+        cliente_telefono=cliente_telefono,
+        cliente_dni=cliente_dni,
+        cliente_direccion=cliente_direccion,
+        cliente_localidad=cliente_localidad,
+        cliente_provincia=cliente_provincia,
+        cliente_codigo_postal=cliente_codigo_postal,
+        metodo_pago="tarjeta_credito",
+        estado_pago="Pendiente",
+        total=total_final,
+        costo_envio=costo_envio,
+        fecha=datetime.utcnow() - timedelta(hours=3)
+    )
+    db.add(nuevo_pedido)
+    db.commit()
+    db.refresh(nuevo_pedido)
+
+    # Enviar el pago directamente a la API de Mercado Pago usando el SDK ya inicializado
+    payment_data = {
+        "transaction_amount": float(total_final),
+        "token": token,
+        "description": f"Compra Beauty Store - Pedido #{nuevo_pedido.id}",
+        "installments": int(installments),
+        "payment_method_id": payment_method_id,
+        "issuer_id": issuer_id if issuer_id else None,
+        "payer": {
+            "email": payer_email,
+            "identification": {"type": "DNI", "number": cliente_dni}
+        },
+        "external_reference": str(nuevo_pedido.id)
+    }
+
+    try:
+        payment_response = mp_sdk.payment().create(payment_data)
+        response_body = payment_response.get("response", {})
+        status_pago = response_body.get("status")
+
+        if status_pago == "approved":
+            nuevo_pedido.estado_pago = "Aprobado"
+            db.commit()
+
+            # 📩 OBTENER LOS DETALLES DEL PEDIDO PARA LOS EMAILS
+            items_procesados = []
+            for d in nuevo_pedido.detalles:
+                items_procesados.append({
+                    "producto": d.producto,
+                    "cantidad": d.cantidad,
+                    "precio_unitario": d.precio_unitario
+                })
+
+            # ✉️ ENVIAR CORREOS AL VENDEDOR Y AL CLIENTE
+            enviar_correo_nuevo_pedido(nuevo_pedido, items_procesados)
+            enviar_correo_cliente_pedido(nuevo_pedido, items_procesados)
+
+            return {"status": "approved", "pedido_id": nuevo_pedido.id}
+        else:
+            razon = response_body.get("status_detail", "Pago rechazado por la entidad.")
+            nuevo_pedido.estado_pago = "Rechazado"
+            db.commit()
+            raise HTTPException(status_code=400, detail=f"Pago no aprobado: {razon}")
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al procesar la tarjeta: {str(e)}")
 
 @app.post("/checkout", response_class=HTMLResponse)
 def procesar_checkout(
@@ -827,14 +1193,19 @@ def procesar_checkout(
             precio_unitario=precio_aplicado
         )
         db.add(detalle)
-        item["producto"].stock -= item["cantidad"]
+        
+        # Descontar stock inmediatamente SOLO si es transferencia
+        if metodo_pago == "transferencia":
+            item["producto"].stock -= item["cantidad"]
     
     db.commit()
 
-    enviar_correo_nuevo_pedido(nuevo_pedido, items_procesados)
-    enviar_correo_cliente_pedido(nuevo_pedido, items_procesados)
+    # Si es transferencia, notificar solo al vendedor (sin correo automático al cliente)
+    if metodo_pago == "transferencia":
+        enviar_correo_nuevo_pedido(nuevo_pedido, items_procesados)
+        config_pago_actual = obtener_config_pago(db)
+        enviar_correo_cliente_transferencia_resumen(nuevo_pedido, items_procesados, config_pago_actual)
 
-    config_pago_actual = obtener_config_pago(db)
 
     if metodo_pago == "mercadopago":
         preference_data = {
@@ -1780,6 +2151,43 @@ def cambiar_estado_banner(
         db.commit()
     return RedirectResponse(url="/admin", status_code=status.HTTP_303_SEE_OTHER)
 
+@app.post("/admin/promo/actualizar")
+def actualizar_promo(
+    activo: bool = Form(False),
+    texto: str = Form(...),
+    fecha_fin: str = Form(None),
+    estilo: str = Form("cyberweek"),
+    imagen_fondo: str = Form(""),
+    boton_texto: str = Form(""),    # 👈 NUEVO: Texto del botón (ej: "Ver Ofertas")
+    boton_enlace: str = Form(""),   # 👈 NUEVO: Enlace de destino (ej: "/#catalogo")
+    db: Session = Depends(database.get_db),
+    auth: bool = Depends(verificar_admin)
+):
+    from datetime import datetime
+    
+    promo = db.query(models.ConfiguracionPromo).first()
+    if not promo:
+        promo = models.ConfiguracionPromo()
+        db.add(promo)
+    
+    promo.activo = activo
+    promo.texto = texto.strip()
+    promo.estilo = estilo
+    promo.imagen_fondo = imagen_fondo.strip() if imagen_fondo else None
+    promo.boton_texto = boton_texto.strip() if boton_texto else None
+    promo.boton_enlace = boton_enlace.strip() if boton_enlace else None
+    
+    if fecha_fin and fecha_fin.strip() != "":
+        try:
+            promo.fecha_fin = datetime.strptime(fecha_fin, "%Y-%m-%dT%H:%M")
+        except ValueError:
+            promo.fecha_fin = None
+    else:
+        promo.fecha_fin = None
+        
+    db.commit()
+    return RedirectResponse(url="/admin", status_code=status.HTTP_303_SEE_OTHER)
+
 @app.post("/webhook/mercadopago")
 async def mercadopago_webhook(request: Request, db: Session = Depends(database.get_db)):
     try:
@@ -1798,7 +2206,24 @@ async def mercadopago_webhook(request: Request, db: Session = Depends(database.g
                     if pedido and pedido.estado_pago != "Aprobado":
                         if status_pago == "approved":
                             pedido.estado_pago = "Aprobado"
+                            
+                            # Descontar stock y preparar ítems para los correos
+                            items_procesados = []
+                            for detalle in pedido.detalles:
+                                prod = detalle.producto
+                                if prod:
+                                    prod.stock -= detalle.cantidad
+                                items_procesados.append({
+                                    "producto": prod,
+                                    "cantidad": detalle.cantidad,
+                                    "precio_unitario": detalle.precio_unitario
+                                })
                             db.commit()
+
+                            # Enviar notificación completa al vendedor y recibo formal al cliente
+                            enviar_correo_nuevo_pedido(pedido, items_procesados)
+                            enviar_correo_cliente_pedido(pedido, items_procesados)
+
                         elif status_pago in ["rejected", "cancelled"]:
                             pedido.estado_pago = "Rechazado"
                             db.commit()

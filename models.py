@@ -68,6 +68,7 @@ class CarruselItem(Base):
     id = Column(Integer, primary_key=True, index=True)
     titulo = Column(String, nullable=True)
     imagen_url = Column(String, nullable=False)
+    tipo_media = Column(String, default="imagen")
     orden = Column(Integer, default=0)
     activo = Column(Boolean, default=True)
 
@@ -175,3 +176,15 @@ class InscripcionEvento(Base):
     fecha_inscripcion = Column(DateTime, default=datetime.utcnow)
 
     evento = relationship("EventoReunion", back_populates="inscripciones")
+
+class ConfiguracionPromo(Base):
+    __tablename__ = "configuracion_promo"
+
+    id = Column(Integer, primary_key=True, index=True)
+    activo = Column(Boolean, default=False)
+    texto = Column(String, default="🔥 ¡20% OFF en toda la tienda por tiempo limitado!")
+    fecha_fin = Column(DateTime, nullable=True)
+    estilo = Column(String, default="cyberweek")
+    imagen_fondo = Column(String, nullable=True)
+    boton_texto = Column(String, nullable=True) 
+    boton_enlace = Column(String, nullable=True) 
