@@ -692,5 +692,138 @@
             </div>
         </div>
     </footer>
+
+<!-- NOTIFICACIÓN FLOTANTE DE COMPRAS RECIENTES (SOCIAL PROOF) -->
+<div id="toast-compra-reciente" class="fixed bottom-4 left-4 z-50 transform translate-y-20 opacity-0 transition-all duration-500 ease-in-out pointer-events-none">
+    <div class="bg-white/95 backdrop-blur-md rounded-2xl p-3 sm:p-4 shadow-2xl border border-mk-rosaviejo/40 flex items-center gap-3.5 max-w-xs sm:max-w-sm pointer-events-auto">
+        
+        <!-- Foto / Icono de Estado -->
+        <div class="relative shrink-0">
+            <div class="w-12 h-12 rounded-xl bg-mk-softrose/60 p-1 flex items-center justify-center border border-mk-rosaviejo/30 overflow-hidden">
+                <img id="toast-img" src="/static/img/logo.png" alt="Producto" class="w-full h-full object-contain">
+            </div>
+            <span class="absolute -top-1 -right-1 flex h-3.5 w-3.5">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-green-500 border-2 border-white"></span>
+            </span>
+        </div>
+
+        <!-- Información de la Compra -->
+        <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between gap-1">
+                <span class="text-[9px] font-bold uppercase tracking-wider text-mk-deep flex items-center gap-1">
+                    <i class="fa-solid fa-bag-shopping text-[10px]"></i> ¡Compra reciente!
+                </span>
+                <span id="toast-tiempo" class="text-[9px] text-gray-400 font-medium">Hace 3 min</span>
+            </div>
+            <p class="text-xs font-bold text-mk-dark truncate mt-0.5" id="toast-cliente">
+                María G. de Godoy Cruz
+            </p>
+            <p class="text-[11px] text-gray-600 truncate" id="toast-producto">
+                compró <span class="font-semibold text-mk-deep">Set TimeWise® 3D</span>
+            </p>
+        </div>
+
+        <!-- Botón para cerrar manualmente -->
+        <button onclick="ocultarToastCompra()" class="text-gray-400 hover:text-mk-deep text-xs p-1 transition">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+</div>
+
+<script>
+    // 1. Clientes y localidades locales (Mendoza)
+    const clientesSocialProof = [
+        { nombre: "Sofía M.", ciudad: "Godoy Cruz" },
+        { nombre: "Valentina R.", ciudad: "Ciudad de Mendoza" },
+        { nombre: "Camila B.", ciudad: "Luján de Cuyo" },
+        { nombre: "Lucía P.", ciudad: "Maipú" },
+        { nombre: "Mariana T.", ciudad: "Guaymallén" },
+        { nombre: "Florencia C.", ciudad: "San Martín" },
+        { nombre: "Gimena L.", ciudad: "Las Heras" },
+        { nombre: "Cecilia C.", ciudad: "San Rafael" },
+        { nombre: "Julieta P.", ciudad: "Junin" },
+        { nombre: "Analia D.", ciudad: "Luján de Cuyo" },
+        { nombre: "Lucía PAna Laura.", ciudad: "San Luis" },
+        { nombre: "Estela D..", ciudad: "Godoy Cruz" },
+        { nombre: "Paola A.", ciudad: "Maipu" },
+        { nombre: "Gabriela R.", ciudad: "Guaymallen" }
+    ];
+
+    const tiemposSocialProof = ["Hace 2 min", "Hace 5 min", "Hace 12 min", "Hace 18 min", "Hace 25 min"];
+
+    // 2. Extraer dinámicamente los productos presentes en la página si los hay (sin usar operadores avanzados para evitar conflictos de linter)
+    function obtenerProductosVista() {
+        let lista = [];
+        const cards = document.querySelectorAll('.producto-card');
+        
+        for (let i = 0; i < cards.length; i++) {
+            const card = cards[i];
+            const nombre = card.getAttribute('data-nombre');
+            const imgElement = card.querySelector('img');
+            const img = imgElement ? imgElement.src : '';
+            
+            if (nombre && img) {
+                lista.push({ nombre: nombre, img: img });
+            }
+        }
+
+        // Respaldos por defecto si está en una vista sin listado de productos (ej: /contacto)
+        if (lista.length === 0) {
+            lista = [
+                { nombre: "Set Timeweis Repair", img: "https://ennfuhqoqxroelcfklnk.supabase.co/storage/v1/object/public/media/Fotos%20MK2026/Set%20Timeweis%20Repair.jpg" },
+                { nombre: "GEL FACIAL RECUPERACION NOCTURNA TIMEWISE", img: "https://ennfuhqoqxroelcfklnk.supabase.co/storage/v1/object/public/media/Fotos%20MK2026/GEL%20FACIAL%20RECUPERACION%20NOCTURNA%20TIMEWISE%20(1).jpg" },
+                { nombre: "Crema facial matificante", img: "https://ennfuhqoqxroelcfklnk.supabase.co/storage/v1/object/public/media/Fotos%20MK2026/Crema%20facial%20matificante%20(1).jpg" }
+            ];
+        }
+        return lista;
+    }
+
+    function mostrarToastCompra() {
+        const toast = document.getElementById('toast-compra-reciente');
+        if (!toast) return;
+
+        const productos = obtenerProductosVista();
+        const cliente = clientesSocialProof[Math.floor(Math.random() * clientesSocialProof.length)];
+        const producto = productos[Math.floor(Math.random() * productos.length)];
+        const tiempo = tiemposSocialProof[Math.floor(Math.random() * tiemposSocialProof.length)];
+
+        document.getElementById('toast-cliente').textContent = cliente.nombre + " de " + cliente.ciudad;
+        document.getElementById('toast-producto').innerHTML = 'compró <span class="font-semibold text-mk-deep">' + producto.nombre + '</span>';
+        document.getElementById('toast-tiempo').textContent = tiempo;
+        document.getElementById('toast-img').src = producto.img;
+
+        // Mostrar notificación
+        toast.classList.remove('translate-y-20', 'opacity-0');
+        toast.classList.add('translate-y-0', 'opacity-100');
+
+        // Se oculta automáticamente a los 5 segundos
+        setTimeout(function() {
+            ocultarToastCompra();
+        }, 8000);
+    }
+
+    function ocultarToastCompra() {
+        const toast = document.getElementById('toast-compra-reciente');
+        if (toast) {
+            toast.classList.remove('translate-y-0', 'opacity-100');
+            toast.classList.add('translate-y-20', 'opacity-0');
+        }
+    }
+
+    // Iniciar el ciclo de notificaciones
+    document.addEventListener('DOMContentLoaded', function() {
+        // Primera notificación a los 4 segundos de entrar
+        setTimeout(function() {
+            mostrarToastCompra();
+            // Luego aparece aleatoriamente cada 20 a 35 segundos
+            setInterval(function() {
+                mostrarToastCompra();
+            }, Math.floor(Math.random() * (35000 - 20000 + 1)) + 20000);
+        }, 4000);
+    });
+</script>
+<!-- BOTÓN FLOTANTE PERMANENTE DE WHATSAPP (Separado a la izquierda del botón de IA) -->
+
 </body>
 </html>
