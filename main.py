@@ -180,6 +180,7 @@ def startup_event():
     try:
         inicializar_provincias_envio(db)
         inicializar_configuracion_pago(db)
+        inicializar_admin_db(db)
     finally:
         db.close()
 
@@ -251,6 +252,17 @@ def verificar_admin(admin_session: str = Cookie(None)):
             headers={"Location": "/admin/login"}
         )
     return True
+
+def inicializar_admin_db(db: Session):
+    try:
+        config = db.query(models.ConfiguracionAdmin).first()
+        if not config:
+            nuevo_admin = models.ConfiguracionAdmin(username="admin", password="admin123")
+            db.add(nuevo_admin)
+            db.commit()
+    except Exception as e:
+        db.rollback()
+        print(f"Aviso en inicialización de admin: {e}")
 
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request, inscrito: bool = Query(False), db: Session = Depends(database.get_db)):
@@ -664,7 +676,7 @@ async def endpoint_chat_ia(mensaje: str = Form(...), db: Session = Depends(datab
 
         # Llamada asíncrona a Gemini con el modelo actual
         response = await client.aio.models.generate_content(
-            model="gemini-3.8-flash",
+            model="gemini-2.0-flash",
             contents=mensaje,
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction
@@ -1286,12 +1298,48 @@ def login_page(request: Request):
     return templates.TemplateResponse(request, "admin/login.html", {"error": None})
 
 @app.post("/admin/login")
-def procesar_login(request: Request, username: str = Form(...), password: str = Form(...)):
-    if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+def procesar_login(
+    request: Request, 
+    username: str = Form(...), 
+    password: str = Form(...), 
+    db: Session = Depends(database.get_db)
+):
+    config = db.query(models.ConfiguracionAdmin).first()
+    admin_user = config.username if config else "admin"
+    admin_pass = config.password if config else "admin123"
+
+    if username == admin_user and password == admin_pass:
         response = RedirectResponse(url="/admin", status_code=status.HTTP_303_SEE_OTHER)
         response.set_cookie(key=COOKIE_ADMIN_KEY, value="sesion_activa_ok", httponly=True)
         return response
+        
     return templates.TemplateResponse(request, "admin/login.html", {"error": "Usuario o contraseña incorrectos"})
+@app.post("/admin/cambiar-password")
+def cambiar_password_admin(
+    password_actual: str = Form(...),
+    password_nueva: str = Form(...),
+    password_confirmar: str = Form(...),
+    db: Session = Depends(database.get_db),
+    auth: bool = Depends(verificar_admin)
+):
+    config = db.query(models.ConfiguracionAdmin).first()
+    if not config:
+        config = models.ConfiguracionAdmin(username="admin", password="admin123")
+        db.add(config)
+        db.commit()
+
+    if config.password != password_actual:
+        return RedirectResponse(url="/admin?error=password_actual_incorrecta", status_code=status.HTTP_303_SEE_OTHER)
+
+    if password_nueva != password_confirmar:
+        return RedirectResponse(url="/admin?error=passwords_no_coinciden", status_code=status.HTTP_303_SEE_OTHER)
+
+    if len(password_nueva.strip()) < 4:
+        return RedirectResponse(url="/admin?error=password_muy_corta", status_code=status.HTTP_303_SEE_OTHER)
+
+    config.password = password_nueva.strip()
+    db.commit()
+    return RedirectResponse(url="/admin?exito=password_actualizada", status_code=status.HTTP_303_SEE_OTHER)
 
 @app.get("/admin/logout")
 def logout():
