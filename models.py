@@ -188,3 +188,10 @@ class ConfiguracionPromo(Base):
     imagen_fondo = Column(String, nullable=True)
     boton_texto = Column(String, nullable=True) 
     boton_enlace = Column(String, nullable=True) 
+
+class ConfiguracionAdmin(Base):
+    __tablename__ = "configuracion_admin"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, default="admin")
+    password = Column(String, default="admin123")
