@@ -17,6 +17,66 @@
         </div>
     </div>
 
+    <!-- SECCIÓN: CAMBIAR CONTRASEÑA DE ADMINISTRADOR -->
+<div class="bg-gray-950 rounded-3xl p-6 sm:p-8 shadow-2xl border border-amber-500/30 space-y-6 relative overflow-hidden my-8">
+    <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-500/10 via-transparent to-transparent pointer-events-none"></div>
+    
+    <div class="relative z-10 space-y-6">
+        <div class="border-b border-gray-800 pb-4 flex items-center justify-between">
+            <div>
+                <h2 class="font-serif-mk text-xl font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-key text-amber-400"></i> Seguridad y Acceso
+                </h2>
+                <p class="text-xs text-gray-400 mt-1">Modifica la contraseña de acceso al panel de control.</p>
+            </div>
+        </div>
+
+        <!-- Alertas de estado por Query Params -->
+        <script>
+            const urlParams = new URLSearchParams(window.location.search);
+            if(urlParams.get('exito') === 'password_actualizada') {
+                document.write('<div class="bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 p-3.5 rounded-2xl text-xs font-bold text-center mb-4">¡Contraseña actualizada con éxito! 🔐</div>');
+            }
+            if(urlParams.get('error') === 'password_actual_incorrecta') {
+                document.write('<div class="bg-red-950/80 border border-red-500/50 text-red-300 p-3.5 rounded-2xl text-xs font-bold text-center mb-4">La contraseña actual es incorrecta. ❌</div>');
+            }
+            if(urlParams.get('error') === 'passwords_no_coinciden') {
+                document.write('<div class="bg-red-950/80 border border-red-500/50 text-red-300 p-3.5 rounded-2xl text-xs font-bold text-center mb-4">Las nuevas contraseñas no coinciden. ⚠️</div>');
+            }
+            if(urlParams.get('error') === 'password_muy_corta') {
+                document.write('<div class="bg-red-950/80 border border-red-500/50 text-red-300 p-3.5 rounded-2xl text-xs font-bold text-center mb-4">La nueva contraseña debe tener al menos 4 caracteres. ⚠️</div>');
+            }
+        </script>
+
+        <form action="/admin/cambiar-password" method="POST" class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+            <div>
+                <label class="block text-xs font-bold text-amber-400 uppercase tracking-wider mb-1">Contraseña Actual</label>
+                <input type="password" name="password_actual" required placeholder="••••••••"
+                       class="w-full text-xs p-3.5 rounded-xl border border-gray-800 bg-gray-900/80 text-white placeholder-gray-500 focus:bg-gray-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none transition shadow-inner">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-amber-400 uppercase tracking-wider mb-1">Nueva Contraseña</label>
+                <input type="password" name="password_nueva" required placeholder="••••••••"
+                       class="w-full text-xs p-3.5 rounded-xl border border-gray-800 bg-gray-900/80 text-white placeholder-gray-500 focus:bg-gray-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none transition shadow-inner">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-amber-400 uppercase tracking-wider mb-1">Confirmar Nueva</label>
+                <input type="password" name="password_confirmar" required placeholder="••••••••"
+                       class="w-full text-xs p-3.5 rounded-xl border border-gray-800 bg-gray-900/80 text-white placeholder-gray-500 focus:bg-gray-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none transition shadow-inner">
+            </div>
+
+            <div class="sm:col-span-3 pt-2">
+                <button type="submit" class="bg-amber-500 hover:bg-amber-400 text-gray-950 font-bold text-xs uppercase tracking-wider py-3 px-6 rounded-xl transition duration-300 shadow-lg flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-shield-halved text-xs"></i>
+                    <span>Actualizar Contraseña de Administrador</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
     <!-- Pestañas de Navegación -->
     <div class="flex space-x-2 border-b border-gray-200 mb-6 overflow-x-auto">
         <button onclick="switchTab('pedidos')" id="btn-pedidos" class="tab-btn px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 border-mk-deep text-mk-deep transition">
