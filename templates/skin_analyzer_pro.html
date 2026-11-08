@@ -1,0 +1,352 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Estilos para la generación limpia del documento PDF al imprimir -->
+<style>
+@media print {
+    body {
+        background-color: #ffffff !important;
+        color: #111827 !important;
+        font-size: 12pt;
+    }
+    body * {
+        visibility: visible !important;
+    }
+    #area-impresion-pdf {
+        position: relative !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 10px !important;
+    }
+    .no-print {
+        display: none !important;
+    }
+    .shadow-2xl, .shadow-md, .shadow-sm {
+        box-shadow: none !important;
+    }
+    /* Permitir salto de página natural y evitar que las tarjetas se corten a la mitad */
+    .grid {
+        display: block !important;
+    }
+    #grid-cremas > div {
+        display: inline-block;
+        width: 48% !important;
+        margin-bottom: 20px;
+        page-break-inside: avoid;
+        border: 1px solid #e5e7eb !important;
+    }
+    /* Forzar que las imágenes de productos mantengan su proporción en el PDF */
+    #grid-cremas img {
+        height: 140px !important;
+        object-fit: contain !important;
+    }
+}
+</style>
+
+<div id="area-impresion-pdf" class="max-w-5xl mx-auto px-4 py-8">
+    <div class="text-center mb-8">
+        <span class="text-xs font-bold tracking-widest text-pink-600 uppercase">Tecnología Biométrica Avanzada</span>
+        <h1 class="text-3xl md:text-4xl font-extrabold text-gray-900 mt-1">Skin Analyzer Mary Kay Pro</h1>
+        <p class="text-gray-600 mt-2 max-w-2xl mx-auto">Escanea tu rostro en tiempo real para obtener una evaluación experta con porcentaje de hidratación, oleosidad, textura de poros y sensibilidad.</p>
+    </div>
+
+    <div class="bg-white rounded-3xl shadow-2xl border border-pink-100 overflow-hidden grid grid-cols-1 md:grid-cols-12">
+        <!-- Columna Izquierda: Visor de Cámara y Controles -->
+        <div class="md:col-span-6 bg-slate-950 p-6 flex flex-col items-center justify-center relative min-h-[380px]">
+            <div id="contenedor-visor" class="relative w-full max-w-xs aspect-square rounded-2xl overflow-hidden border-2 border-pink-400/40 shadow-2xl bg-slate-900 flex items-center justify-center">
+                
+                <video id="video-feed" autoplay playsinline muted width="640" height="640" class="w-full h-full object-cover hidden"></video>
+                <canvas id="canvas-procesador" width="640" height="640" class="w-full h-full object-cover hidden"></canvas>
+
+                <!-- Overlay de Matriz Biométrica Facial -->
+                <div id="laser-overlay" class="absolute inset-0 pointer-events-none hidden z-10">
+                    <div class="w-full h-1 bg-pink-500 shadow-[0_0_15px_#ec4899] animate-pulse relative top-0"></div>
+                    <div class="absolute inset-0 border-2 border-pink-500/30 rounded-2xl flex items-center justify-center">
+                        <!-- Malla facial -->
+                        <div class="w-44 h-60 border border-dashed border-pink-400/70 rounded-[50%] animate-pulse relative">
+                            <!-- Zona T -->
+                            <div class="absolute top-4 left-1/2 -translate-x-1/2 w-28 h-8 border border-pink-300/40 rounded-full"></div>
+                            <!-- Mejilla Izq -->
+                            <div class="absolute top-24 left-3 w-10 h-10 border border-blue-300/40 rounded-full"></div>
+                            <!-- Mejilla Der -->
+                            <div class="absolute top-24 right-3 w-10 h-10 border border-blue-300/40 rounded-full"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="placeholder-inicial" class="text-center p-6 text-slate-400">
+                    <svg class="w-16 h-16 mx-auto mb-3 text-pink-500/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    <p class="text-sm">Activa la cámara de tu PC/Celular o sube una fotografía.</p>
+                </div>
+            </div>
+
+            <div class="mt-6 flex flex-wrap justify-center gap-3 w-full max-w-xs no-print">
+                <button onclick="iniciarCamara('user')" class="flex-1 bg-pink-600 hover:bg-pink-700 text-white font-semibold text-xs py-3 px-4 rounded-xl transition shadow-lg flex items-center justify-center gap-2">📱 Cámara</button>
+                <button id="btn-analizar" onclick="ejecutarAnalisisBiometricoPro()" disabled class="flex-1 bg-slate-700 text-slate-400 font-semibold text-xs py-3 px-4 rounded-xl transition cursor-not-allowed">🔍 Escanear</button>
+                <label class="w-full bg-slate-800 hover:bg-slate-700 text-pink-300 text-center font-semibold text-xs py-2.5 px-4 rounded-xl cursor-pointer transition border border-pink-500/20">
+                    📁 Cargar Foto desde archivo
+                    <input type="file" id="input-foto" accept="image/*" class="hidden" onchange="cargarFotoDesdeArchivo(event)">
+                </label>
+            </div>
+        </div>
+
+        <!-- Columna Derecha: Reporte e Informe de Diagnóstico -->
+        <div class="md:col-span-6 p-6 md:p-8 flex flex-col justify-between bg-white">
+            <div>
+                <div class="flex items-center justify-between border-b pb-2 mb-4">
+                    <h3 class="text-lg font-bold text-gray-800">Informe Biométrico de Piel</h3>
+                    <button id="btn-descargar-pdf" onclick="descargarInformePDF()" class="hidden no-print bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition shadow flex items-center gap-1.5 cursor-pointer">
+                        📥 Descargar PDF
+                    </button>
+                </div>
+
+                <div id="loader-proceso" class="hidden py-12 text-center">
+                    <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-pink-600 border-t-transparent mb-3"></div>
+                    <p class="text-sm font-semibold text-pink-700">Analizando imagen mediante Inteligencia Artificial Multimodal...</p>
+                </div>
+                
+                <div id="empty-state" class="text-center py-12 text-gray-400">
+                    <p class="text-sm">Inicia el escaneo para calcular los porcentajes reales de hidratación, oleosidad, poros y líneas.</p>
+                </div>
+
+                <div id="resultados-panel" class="hidden space-y-5">
+                    <div class="bg-gradient-to-r from-pink-50 to-rose-50 p-4 rounded-2xl border border-pink-200">
+                        <span class="text-xs font-bold text-pink-600 uppercase">Diagnóstico Final</span>
+                        <h4 id="lbl-tipo-piel" class="text-2xl font-extrabold text-pink-900 mt-0.5">-</h4>
+                        <p id="lbl-clasificacion" class="text-xs text-gray-600 mt-1 leading-relaxed">-</p>
+                    </div>
+                    
+                    <!-- Barras de Gráficas Biométricas -->
+                    <div class="space-y-3">
+                        <div>
+                            <div class="flex justify-between text-xs font-bold mb-1"><span class="text-gray-700">💧 Hidratación Cutánea</span><span id="val-pct-hidratacion" class="text-pink-600">0%</span></div>
+                            <div class="w-full bg-gray-100 rounded-full h-2.5"><div id="bar-hidratacion" class="bg-blue-500 h-2.5 rounded-full transition-all duration-1000" style="width: 0%"></div></div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs font-bold mb-1"><span class="text-gray-700">✨ Oleosidad / Sebo (Zona T)</span><span id="val-pct-oleosidad" class="text-pink-600">0%</span></div>
+                            <div class="w-full bg-gray-100 rounded-full h-2.5"><div id="bar-oleosidad" class="bg-amber-500 h-2.5 rounded-full transition-all duration-1000" style="width: 0%"></div></div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs font-bold mb-1"><span class="text-gray-700">🔍 Textura y Porosidad</span><span id="val-pct-textura" class="text-pink-600">0%</span></div>
+                            <div class="w-full bg-gray-100 rounded-full h-2.5"><div id="bar-textura" class="bg-purple-500 h-2.5 rounded-full transition-all duration-1000" style="width: 0%"></div></div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs font-bold mb-1"><span class="text-gray-700">🌸 Sensibilidad y Micro-líneas</span><span id="val-pct-sensibilidad" class="text-pink-600">0%</span></div>
+                            <div class="w-full bg-gray-100 rounded-full h-2.5"><div id="bar-sensibilidad" class="bg-rose-500 h-2.5 rounded-full transition-all duration-1000" style="width: 0%"></div></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 p-4 rounded-xl border text-xs text-gray-700 leading-relaxed">
+                        <strong class="block text-gray-900 mb-1 font-bold">Evaluación del Experto:</strong>
+                        <p id="lbl-evaluacion-experto">-</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Catálogo de Cremas Sugeridas -->
+    <div id="seccion-cremas-recomendadas" class="hidden mt-10">
+        <div class="text-center mb-6">
+            <h3 class="text-2xl font-bold text-gray-900">Tu Rutina Personalizada Mary Kay</h3>
+            <p class="text-sm text-gray-600">Cremas y tratamientos recomendados por el analizador para tu tipo de piel:</p>
+        </div>
+        <div id="grid-cremas" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6"></div>
+    </div>
+</div>
+
+<script>
+let streamCamara = null;
+
+async function iniciarCamara(facing = 'user') {
+    const video = document.getElementById('video-feed');
+    const placeholder = document.getElementById('placeholder-inicial');
+    const btnAnalizar = document.getElementById('btn-analizar');
+    const canvas = document.getElementById('canvas-procesador');
+
+    try {
+        if (streamCamara) {
+            streamCamara.getTracks().forEach(t => t.stop());
+            streamCamara = null;
+        }
+
+        const constraints = {
+            video: { facingMode: facing, width: { ideal: 640 }, height: { ideal: 640 } },
+            audio: false
+        };
+
+        streamCamara = await navigator.mediaDevices.getUserMedia(constraints);
+
+        canvas.classList.add('hidden');
+        placeholder.classList.add('hidden');
+        video.classList.remove('hidden');
+
+        video.srcObject = streamCamara;
+        video.muted = true;
+
+        video.onloadedmetadata = () => {
+            video.play().catch(e => console.error("Error reproduciendo stream:", e));
+        };
+
+        btnAnalizar.disabled = false;
+        btnAnalizar.className = "flex-1 bg-pink-600 hover:bg-pink-700 text-white font-semibold text-xs py-3 px-4 rounded-xl transition shadow-lg cursor-pointer";
+
+    } catch (err) {
+        alert("No se pudo acceder a la cámara. Revisa los permisos o sube una fotografía.");
+    }
+}
+
+function cargarFotoDesdeArchivo(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (streamCamara) {
+        streamCamara.getTracks().forEach(t => t.stop());
+        streamCamara = null;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            const canvas = document.getElementById('canvas-procesador');
+            const video = document.getElementById('video-feed');
+            const placeholder = document.getElementById('placeholder-inicial');
+            const ctx = canvas.getContext('2d');
+
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+
+            video.classList.add('hidden');
+            placeholder.classList.add('hidden');
+            canvas.classList.remove('hidden');
+
+            const btnAnalizar = document.getElementById('btn-analizar');
+            btnAnalizar.disabled = false;
+            btnAnalizar.className = "flex-1 bg-pink-600 hover:bg-pink-700 text-white font-semibold text-xs py-3 px-4 rounded-xl transition shadow-lg cursor-pointer";
+
+            ejecutarAnalisisBiometricoPro();
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+async function ejecutarAnalisisBiometricoPro() {
+    const video = document.getElementById('video-feed');
+    const canvas = document.getElementById('canvas-procesador');
+    const ctx = canvas.getContext('2d');
+    const laser = document.getElementById('laser-overlay');
+    const loader = document.getElementById('loader-proceso');
+    const emptyState = document.getElementById('empty-state');
+    const resultados = document.getElementById('resultados-panel');
+    const btnDescargarPDF = document.getElementById('btn-descargar-pdf');
+
+    // Congelar fotograma actual en el canvas si el video está activo
+    if (!video.classList.contains('hidden')) {
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 640;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        video.classList.add('hidden');
+        canvas.classList.remove('hidden');
+    }
+
+    laser.classList.remove('hidden');
+    loader.classList.remove('hidden');
+    emptyState.classList.add('hidden');
+    resultados.classList.add('hidden');
+    btnDescargarPDF.classList.add('hidden');
+
+    // Convertir la imagen capturada en el Canvas a formato Base64 (JPEG)
+    const imagenBase64 = canvas.toDataURL('image/jpeg', 0.85);
+
+    const formData = new FormData();
+    formData.append("imagen_base64", imagenBase64);
+
+    try {
+        // Envío directo a la API con Inteligencia Artificial Multimodal
+        const response = await fetch("/api/analizador-piel-ia-real", { 
+            method: "POST", 
+            body: formData 
+        });
+
+        if (!response.ok) {
+            throw new Error("Error en la respuesta del servidor de IA");
+        }
+
+        const res = await response.json();
+        const diag = res.diagnostico;
+
+        // Renderizar el informe real generado por la IA
+        document.getElementById('lbl-tipo-piel').innerText = diag.tipo_piel;
+        document.getElementById('lbl-clasificacion').innerText = diag.clasificacion;
+        document.getElementById('lbl-evaluacion-experto').innerText = diag.evaluacion_experto;
+
+        document.getElementById('val-pct-hidratacion').innerText = diag.porcentajes.hidratacion + "%";
+        document.getElementById('bar-hidratacion').style.width = diag.porcentajes.hidratacion + "%";
+
+        document.getElementById('val-pct-oleosidad').innerText = diag.porcentajes.oleosidad + "%";
+        document.getElementById('bar-oleosidad').style.width = diag.porcentajes.oleosidad + "%";
+
+        document.getElementById('val-pct-textura').innerText = diag.porcentajes.textura_poros + "%";
+        document.getElementById('bar-textura').style.width = diag.porcentajes.textura_poros + "%";
+
+        document.getElementById('val-pct-sensibilidad').innerText = diag.porcentajes.sensibilidad_lineas + "%";
+        document.getElementById('bar-sensibilidad').style.width = diag.porcentajes.sensibilidad_lineas + "%";
+
+        // Renderizar la lista dinámica de productos recomendados del catálogo
+        const gridCremas = document.getElementById('grid-cremas');
+        gridCremas.innerHTML = res.cremas_recomendadas.map(c => `
+            <div class="bg-white rounded-2xl border border-pink-100 p-4 shadow-sm hover:shadow-md transition flex flex-col justify-between">
+                <div>
+                    <img src="${c.imagen_url}" class="w-full h-36 object-cover rounded-xl mb-3">
+                    <h5 class="font-bold text-sm text-gray-800 line-clamp-1">${c.nombre}</h5>
+                    <p class="text-xs text-gray-500 line-clamp-2 mt-1">${c.descripcion}</p>
+                </div>
+                <div class="mt-4 flex items-center justify-between">
+                    <span class="text-pink-600 font-extrabold text-sm">$${c.precio.toLocaleString('es-AR')}</span>
+                    <button onclick="agregarAlCarritoDirecto(${c.id}, '${c.nombre}', ${c.precio}, '${c.imagen_url}')" class="no-print bg-pink-600 hover:bg-pink-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg">+ Carrito</button>
+                </div>
+            </div>
+        `).join('');
+
+        laser.classList.add('hidden');
+        loader.classList.add('hidden');
+        resultados.classList.remove('hidden');
+        btnDescargarPDF.classList.remove('hidden');
+        document.getElementById('seccion-cremas-recomendadas').classList.remove('hidden');
+
+        if (streamCamara) {
+            streamCamara.getTracks().forEach(t => t.stop());
+            streamCamara = null;
+        }
+    } catch (e) {
+        console.error("Error procesando imagen:", e);
+        alert("Error al procesar el análisis biométrico con la Inteligencia Artificial. Asegúrate de tener configurada tu API key de Gemini en el servidor.");
+        laser.classList.add('hidden');
+        loader.classList.add('hidden');
+        emptyState.classList.remove('hidden');
+    }
+}
+
+function descargarInformePDF() {
+    window.print();
+}
+
+function agregarAlCarritoDirecto(id, nombre, precio, imagen) {
+    let cart = JSON.parse(localStorage.getItem("cart") || "[]");
+    let existe = cart.find(item => item.id === id);
+    if (existe) { 
+        existe.cantidad += 1; 
+    } else { 
+        cart.push({ id: id, nombre: nombre, precio: precio, imagen_url: imagen, cantidad: 1 }); 
+    }
+    localStorage.setItem("cart", JSON.stringify(cart));
+    alert(`¡${nombre} sumado a tu carrito! 🛍️✨`);
+}
+</script>
+{% endblock %}
