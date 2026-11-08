@@ -1,6 +1,7 @@
 import os
 import json
 import io
+import base64
 import urllib.parse
 import smtplib
 from email.mime.text import MIMEText
@@ -26,6 +27,7 @@ from reportlab.pdfgen import canvas
 from fastapi import Response
 from sqlalchemy.exc import IntegrityError
 from dotenv import load_dotenv
+import httpx
 
 os.makedirs("static", exist_ok=True)
 os.makedirs("templates", exist_ok=True)
@@ -565,7 +567,6 @@ def detalle_producto(request: Request, producto_id: int, db: Session = Depends(d
     producto = db.query(models.Producto).filter(models.Producto.id == producto_id).first()
     if not producto:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
-    # ── NUEVO: Obtener productos relacionados (activos y distintos al actual) ──
     productos_relacionados = db.query(models.Producto).filter(
         models.Producto.id != producto_id,
         models.Producto.activo == True
@@ -620,37 +621,30 @@ def agregar_resena(
     db.commit()
     return RedirectResponse(url=f"/producto/{producto_id}", status_code=status.HTTP_303_SEE_OTHER)
 
-# Endpoint del Asistente de IA (Gemini - google-genai)
-# Endpoint del Asistente de IA (Versión Asíncrona)
-# Endpoint del Asistente de IA con soporte de Blog y modo asíncrono
 @app.post("/api/chat")
 async def endpoint_chat_ia(mensaje: str = Form(...), db: Session = Depends(database.get_db)):
     try:
-        # 1. Obtener catálogo de productos activos
         productos = db.query(models.Producto).filter(models.Producto.activo == True).all()
         catalogo_info = "\n".join([
-            f"- ID {p.id}: {p.nombre} | Precio: ${p.precio:,.2f} | Stock: {p.stock} | Descripción: {p.descripcion}" 
+            f"- {p.nombre} | Precio: ${p.precio:,.2f} | Stock: {p.stock}" 
             for p in productos
         ])
 
-        # 2. Obtener configuración de pagos y provincias de envío
         config_pago = obtener_config_pago(db)
         provincias = db.query(models.ProvinciaEnvio).filter(models.ProvinciaEnvio.activo == True).all()
         envios_info = "\n".join([
-            f"- {e.provincia}: Costo ${e.costo:,.2f} (Gratis desde ${e.gratis_desde if e.gratis_desde else 'No aplica'})" 
+            f"- {e.provincia}: Costo ${e.costo:,.2f}" 
             for e in provincias
         ])
 
-        # 3. Obtener artículos publicados del Blog
         posts = db.query(models.BlogPost).filter(models.BlogPost.publicado == True).all()
         blog_info = "\n".join([
-            f"- Título: {p.titulo} | Subtítulo: {p.subtitulo} | Contenido: {p.contenido[:300]}..." 
+            f"- {p.titulo}: {p.subtitulo}" 
             for p in posts
         ])
 
         porcentaje_desc = config_pago.get('descuento_porcentaje', 10.0)
 
-        # 4. Instrucciones del sistema enriquecidas con el Blog
         system_instruction = f"""
         Eres 'Giuli', la asesora virtual experta en belleza y vendedora de la tienda online 'BEAUTY STORE en Mendoza| Mary Kay'.
         Tu tono debe ser amable, cálido, profesional y usar emojis acordes a una tienda de cosméticos (✨, 💖, 🛍️).
@@ -662,7 +656,7 @@ async def endpoint_chat_ia(mensaje: str = Form(...), db: Session = Depends(datab
         {catalogo_info if catalogo_info else "No hay productos cargados actualmente."}
 
         --- ARTÍCULOS Y CONSEJOS DEL BLOG ---
-        {blog_info if blog_info else "No hay artículos publicados en el blog actualmente."}
+        {blog_info if blog_info else "No hay artículos publicados en el blog actuellement."}
 
         --- COSTOS Y REGLAS DE ENVÍO ---
         {envios_info}
@@ -674,32 +668,49 @@ async def endpoint_chat_ia(mensaje: str = Form(...), db: Session = Depends(datab
         Responde de forma concisa (máximo 3 o 4 párrafos cortos) y orienta siempre al cliente a concretar su compra, leer más en el blog o resolver su duda de forma práctica.
         """
 
-        # Llamada asíncrona a Gemini con el modelo actual
-        response = await client.aio.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=mensaje,
-            config=types.GenerateContentConfig(
-                system_instruction=system_instruction
-            )
-        )
+        gemini_key = os.environ.get("GEMINI_API_KEY")
+        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent"
         
-        respuesta_ia = response.text if response.text else "¡Hola! ¿En qué puedo ayudarte hoy con tus productos Mary Kay?"
-
-        return {"respuesta": respuesta_ia}
-
-    except Exception as e:
-        print(f"❌ ERROR EXACTO EN EL CHAT: {type(e).__name__} - {str(e)}")
+        headers = {
+            "x-goog-api-key": gemini_key,
+            "Content-Type": "application/json"
+        }
         
-        error_str = str(e)
-        if "503" in error_str or "UNAVAILABLE" in error_str:
+        payload = {
+            "system_instruction": {
+                "parts": [{"text": system_instruction}]
+            },
+            "contents": [
+                {
+                    "parts": [{"text": mensaje}]
+                }
+            ]
+        }
+
+        async with httpx.AsyncClient(timeout=60.0) as client_http:
+            res = await client_http.post(url, headers=headers, json=payload)
+            data = res.json()
+
+        if res.status_code == 200 and "candidates" in data:
+            respuesta_ia = data["candidates"][0]["content"]["parts"][0]["text"]
+            return {"respuesta": respuesta_ia}
+        else:
+            print(f"❌ Respuesta API Google ({res.status_code}): {data}")
             return {
                 "respuesta": "¡Hola! En este momento tengo muchísimas consultas y los servidores de atención están a pleno. Podes explorar los productos en el catálogo o escribirme directamente por WhatsApp para asesorarte al instante. 💖✨"
             }
-            
+
+    except httpx.TimeoutException:
+        print("⏱️ TIMEOUT: La API de Gemini tardó demasiado en responder.")
+        return {
+            "respuesta": "¡Hola! Las consultas están demorando un poquito más de lo habitual hoy. Podes explorar los productos en el catálogo o escribirme por WhatsApp para asesorarte al instante. 💖✨"
+        }
+    except Exception as e:
+        print(f"❌ ERROR EXACTO EN EL CHAT: {type(e).__name__} - {str(e)}")
         return {
             "respuesta": "¡Hola! Estoy un poco ocupada atendiendo el catálogo, pero podés consultarme por nuestros productos, envíos o medios de pago en cualquier momento. 💖"
         }
-# Endpoint exclusivo para generar el QR en pantalla (MODO / Mercado Pago)
+
 @app.post("/api/generar-qr-pago")
 def generar_qr_pago(
     cart_data: str = Form(...),
@@ -725,7 +736,6 @@ def generar_qr_pago(
     total_bruto = 0.0
     items_procesados = []
 
-    # 1. Validar stock y procesar ítems
     for item in items:
         prod = db.query(models.Producto).filter(models.Producto.id == item["id"]).first()
         if not prod or prod.stock < item["cantidad"]:
@@ -748,7 +758,6 @@ def generar_qr_pago(
     costo_envio = config_envio.costo if config_envio else 0.0
     total_final = total_bruto + costo_envio
 
-    # 2. Crear pedido principal con estado Pendiente
     nuevo_pedido = models.Pedido(
         cliente_nombre=cliente_nombre,
         cliente_email=cliente_email,
@@ -768,7 +777,6 @@ def generar_qr_pago(
     db.commit()
     db.refresh(nuevo_pedido)
 
-    # 3. Guardar detalles del pedido (SIN descontar stock y SIN enviar correos; se delega al webhook)
     for item in items_procesados:
         detalle = models.PedidoDetalle(
             pedido_id=nuevo_pedido.id,
@@ -844,7 +852,6 @@ def procesar_pago_tarjeta(
     total_bruto = 0.0
     items_procesados = []
 
-    # 1. Validar stock y calcular precios
     for item in items:
         prod = db.query(models.Producto).filter(models.Producto.id == item["id"]).first()
         if not prod or prod.stock < item["cantidad"]:
@@ -870,7 +877,6 @@ def procesar_pago_tarjeta(
     costo_envio = config_envio.costo if config_envio else 0.0
     total_final = total_bruto + costo_envio
 
-    # 2. Crear pedido preliminar en base de datos
     nuevo_pedido = models.Pedido(
         cliente_nombre=cliente_nombre,
         cliente_email=payer_email,
@@ -890,7 +896,6 @@ def procesar_pago_tarjeta(
     db.commit()
     db.refresh(nuevo_pedido)
 
-    # 3. Guardar detalles y descontar stock inmediatamente
     for item in items_procesados:
         detalle = models.PedidoDetalle(
             pedido_id=nuevo_pedido.id,
@@ -902,7 +907,6 @@ def procesar_pago_tarjeta(
         item["producto"].stock -= item["cantidad"]
     db.commit()
 
-    # 4. Enviar el pago a la API de Mercado Pago
     payment_data = {
         "transaction_amount": float(total_final),
         "token": token,
@@ -926,7 +930,6 @@ def procesar_pago_tarjeta(
             nuevo_pedido.estado_pago = "Aprobado"
             db.commit()
 
-            # Enviar correos de confirmación al aprobarse
             enviar_correo_nuevo_pedido(nuevo_pedido, items_procesados)
             enviar_correo_cliente_pedido(nuevo_pedido, items_procesados)
 
@@ -939,7 +942,6 @@ def procesar_pago_tarjeta(
             razon = response_body.get("status_detail", "Pago rechazado por la entidad.")
             nuevo_pedido.estado_pago = "Rechazado"
             
-            # Si el pago con tarjeta es rechazado, devolvemos el stock al inventario
             for item in items_procesados:
                 item["producto"].stock += item["cantidad"]
             db.commit()
@@ -947,115 +949,12 @@ def procesar_pago_tarjeta(
             raise HTTPException(status_code=400, detail=f"Pago no aprobado: {razon}")
 
     except Exception as e:
-        # En caso de error general con la API, revertimos el stock descontado
         for item in items_procesados:
             item["producto"].stock += item["cantidad"]
         db.commit()
         
         if isinstance(e, HTTPException):
             raise e
-        raise HTTPException(status_code=500, detail=f"Error al procesar la tarjeta: {str(e)}")
-
-@app.post("/api/procesar-pago-tarjeta")
-def procesar_pago_tarjeta(
-    token: str = Form(...),
-    payment_method_id: str = Form(...),
-    installments: int = Form(1),
-    issuer_id: str = Form(None),
-    payer_email: str = Form(...),
-    cart_data: str = Form(...),
-    cliente_nombre: str = Form(...),
-    cliente_telefono: str = Form(...),
-    cliente_dni: str = Form(...),
-    cliente_direccion: str = Form(...),
-    cliente_localidad: str = Form(...),
-    cliente_codigo_postal: str = Form(""),
-    cliente_provincia: str = Form(...),
-    cupon_codigo: str = Form(None),
-    db: Session = Depends(database.get_db)
-):
-    try:
-        items = json.loads(cart_data)
-    except:
-        raise HTTPException(status_code=400, detail="Carrito inválido")
-
-    if not items:
-        raise HTTPException(status_code=400, detail="El carrito está vacío")
-
-    total_bruto = sum(float(item["precio"]) * int(item["cantidad"]) for item in items)
-    
-    config_envio = db.query(models.ProvinciaEnvio).filter(
-        models.ProvinciaEnvio.provincia == cliente_provincia,
-        models.ProvinciaEnvio.activo == True
-    ).first()
-    costo_envio = config_envio.costo if config_envio else 0.0
-    total_final = total_bruto + costo_envio
-
-    # Crear el pedido preliminar en base de datos
-    nuevo_pedido = models.Pedido(
-        cliente_nombre=cliente_nombre,
-        cliente_email=payer_email,
-        cliente_telefono=cliente_telefono,
-        cliente_dni=cliente_dni,
-        cliente_direccion=cliente_direccion,
-        cliente_localidad=cliente_localidad,
-        cliente_provincia=cliente_provincia,
-        cliente_codigo_postal=cliente_codigo_postal,
-        metodo_pago="tarjeta_credito",
-        estado_pago="Pendiente",
-        total=total_final,
-        costo_envio=costo_envio,
-        fecha=datetime.utcnow() - timedelta(hours=3)
-    )
-    db.add(nuevo_pedido)
-    db.commit()
-    db.refresh(nuevo_pedido)
-
-    # Enviar el pago directamente a la API de Mercado Pago usando el SDK ya inicializado
-    payment_data = {
-        "transaction_amount": float(total_final),
-        "token": token,
-        "description": f"Compra Beauty Store - Pedido #{nuevo_pedido.id}",
-        "installments": int(installments),
-        "payment_method_id": payment_method_id,
-        "issuer_id": issuer_id if issuer_id else None,
-        "payer": {
-            "email": payer_email,
-            "identification": {"type": "DNI", "number": cliente_dni}
-        },
-        "external_reference": str(nuevo_pedido.id)
-    }
-
-    try:
-        payment_response = mp_sdk.payment().create(payment_data)
-        response_body = payment_response.get("response", {})
-        status_pago = response_body.get("status")
-
-        if status_pago == "approved":
-            nuevo_pedido.estado_pago = "Aprobado"
-            db.commit()
-
-            # 📩 OBTENER LOS DETALLES DEL PEDIDO PARA LOS EMAILS
-            items_procesados = []
-            for d in nuevo_pedido.detalles:
-                items_procesados.append({
-                    "producto": d.producto,
-                    "cantidad": d.cantidad,
-                    "precio_unitario": d.precio_unitario
-                })
-
-            # ✉️ ENVIAR CORREOS AL VENDEDOR Y AL CLIENTE
-            enviar_correo_nuevo_pedido(nuevo_pedido, items_procesados)
-            enviar_correo_cliente_pedido(nuevo_pedido, items_procesados)
-
-            return {"status": "approved", "pedido_id": nuevo_pedido.id}
-        else:
-            razon = response_body.get("status_detail", "Pago rechazado por la entidad.")
-            nuevo_pedido.estado_pago = "Rechazado"
-            db.commit()
-            raise HTTPException(status_code=400, detail=f"Pago no aprobado: {razon}")
-
-    except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al procesar la tarjeta: {str(e)}")
 
 @app.post("/checkout", response_class=HTMLResponse)
@@ -1206,18 +1105,15 @@ def procesar_checkout(
         )
         db.add(detalle)
         
-        # Descontar stock inmediatamente SOLO si es transferencia
         if metodo_pago == "transferencia":
             item["producto"].stock -= item["cantidad"]
     
     db.commit()
 
-    # Si es transferencia, notificar solo al vendedor (sin correo automático al cliente)
     if metodo_pago == "transferencia":
         enviar_correo_nuevo_pedido(nuevo_pedido, items_procesados)
         config_pago_actual = obtener_config_pago(db)
         enviar_correo_cliente_transferencia_resumen(nuevo_pedido, items_procesados, config_pago_actual)
-
 
     if metodo_pago == "mercadopago":
         preference_data = {
@@ -1253,6 +1149,7 @@ def procesar_checkout(
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error al conectar con Mercado Pago. Detalle: {str(e)}")
 
+    config_pago_actual = obtener_config_pago(db)
     return templates.TemplateResponse(request, "confirmacion.html", {
         "pedido": nuevo_pedido,
         "datos_transferencia": config_pago_actual,
@@ -1314,6 +1211,7 @@ def procesar_login(
         return response
         
     return templates.TemplateResponse(request, "admin/login.html", {"error": "Usuario o contraseña incorrectos"})
+
 @app.post("/admin/cambiar-password")
 def cambiar_password_admin(
     password_actual: str = Form(...),
@@ -2206,8 +2104,8 @@ def actualizar_promo(
     fecha_fin: str = Form(None),
     estilo: str = Form("cyberweek"),
     imagen_fondo: str = Form(""),
-    boton_texto: str = Form(""),    # 👈 NUEVO: Texto del botón (ej: "Ver Ofertas")
-    boton_enlace: str = Form(""),   # 👈 NUEVO: Enlace de destino (ej: "/#catalogo")
+    boton_texto: str = Form(""),
+    boton_enlace: str = Form(""),
     db: Session = Depends(database.get_db),
     auth: bool = Depends(verificar_admin)
 ):
@@ -2255,7 +2153,6 @@ async def mercadopago_webhook(request: Request, db: Session = Depends(database.g
                         if status_pago == "approved":
                             pedido.estado_pago = "Aprobado"
                             
-                            # Descontar stock y preparar ítems para los correos
                             items_procesados = []
                             for detalle in pedido.detalles:
                                 prod = detalle.producto
@@ -2268,7 +2165,6 @@ async def mercadopago_webhook(request: Request, db: Session = Depends(database.g
                                 })
                             db.commit()
 
-                            # Enviar notificación completa al vendedor y recibo formal al cliente
                             enviar_correo_nuevo_pedido(pedido, items_procesados)
                             enviar_correo_cliente_pedido(pedido, items_procesados)
 
@@ -2278,3 +2174,180 @@ async def mercadopago_webhook(request: Request, db: Session = Depends(database.g
     except Exception as e:
         print(f"Error webhook Mercado Pago: {e}")
     return {"status": "ok"}
+
+@app.post("/api/analizador-piel-profesional")
+async def analizador_piel_profesional(
+    hidratacion_val: float = Form(...),
+    oleosidad_val: float = Form(...),
+    textura_val: float = Form(...),
+    sensibilidad_val: float = Form(...),
+    db: Session = Depends(database.get_db)
+):
+    pct_hidratacion = round(min(100, max(20, hidratacion_val)), 1)
+    pct_oleosidad = round(min(100, max(15, oleosidad_val)), 1)
+    pct_textura = round(min(100, max(25, textura_val)), 1)
+    pct_sensibilidad = round(min(100, max(10, sensibilidad_val)), 1)
+
+    if pct_oleosidad > 65 and pct_hidratacion >= 50:
+        tipo_piel = "Grasa / Oleosa"
+        clasificacion = "Piel con hiperproducción sebácea y tendencia a poros dilatados."
+    elif pct_oleosidad > 55 and pct_hidratacion < 50:
+        tipo_piel = "Mixta a Grasa"
+        clasificacion = "Zona T oleosa con deshidratación focalizada en mejillas."
+    elif pct_hidratacion < 50 and pct_oleosidad < 40:
+        tipo_piel = "Seca / Deshidratada"
+        clasificacion = "Deficiencia de barrera lipídica y humedad celular."
+    elif pct_sensibilidad > 60:
+        tipo_piel = "Sensible / Reactiva"
+        clasificacion = "Piel con reactividad vascular activa y barrera cutánea comprometida."
+    else:
+        tipo_piel = "Normal / Balanceada"
+        clasificacion = "Excelente equilibrio hidrolipídico y textura uniforme."
+
+    evaluacion_experto = f"""
+    Basado en el análisis óptico-biométrico: Tu piel presenta un nivel de hidratación del {pct_hidratacion}%, 
+    con una actividad sebácea del {pct_oleosidad}%. La visibilidad de poros y textura se ubica en un {pct_textura}%, 
+    mientras que el índice de reactividad/líneas es del {pct_sensibilidad}%. {clasificacion} 
+    Se recomienda reforzar la barrera de humectación y utilizar activos botánicos o ácido hialurónico según corresponda.
+    """.strip()
+
+    query = db.query(models.Producto).filter(models.Producto.activo == True)
+    if "Grasa" in tipo_piel:
+        productos_query = query.filter(models.Producto.descripcion.ilike("%matificante%") | models.Producto.nombre.ilike("%timewise%")).limit(4).all()
+    elif "Seca" in tipo_piel:
+        productos_query = query.filter(models.Producto.descripcion.ilike("%humectante%") | models.Producto.descripcion.ilike("%hidratante%")).limit(4).all()
+    else:
+        productos_query = query.limit(4).all()
+
+    if not productos_query:
+        productos_query = query.limit(4).all()
+
+    cremas_recomendadas = []
+    for p in productos_query:
+        precio_final = p.precio
+        if p.descuento_porcentaje and p.descuento_porcentaje > 0:
+            precio_final = p.precio * (1 - p.descuento_porcentaje / 100.0)
+        cremas_recomendadas.append({
+            "id": p.id,
+            "nombre": p.nombre,
+            "precio": precio_final,
+            "imagen_url": p.imagen_url,
+            "descripcion": p.descripcion
+        })
+
+    return {
+        "diagnostico": {
+            "tipo_piel": tipo_piel,
+            "clasificacion": clasificacion,
+            "porcentajes": {
+                "hidratacion": pct_hidratacion,
+                "oleosidad": pct_oleosidad,
+                "textura_poros": pct_textura,
+                "sensibilidad_lineas": pct_sensibilidad
+            },
+            "evaluacion_experto": evaluacion_experto
+        },
+        "cremas_recomendadas": cremas_recomendadas
+    }
+
+@app.post("/api/analizador-piel-ia-real")
+async def analizador_piel_ia_real(
+    imagen_base64: str = Form(...),
+    db: Session = Depends(database.get_db)
+):
+    try:
+        if "," in imagen_base64:
+            header, encoded_data = imagen_base64.split(",", 1)
+        else:
+            encoded_data = imagen_base64
+
+        image_bytes = base64.b64decode(encoded_data)
+
+        api_key = os.environ.get("GEMINI_API_KEY")
+        if not api_key:
+            raise HTTPException(status_code=500, detail="La variable GEMINI_API_KEY no está configurada en el servidor.")
+
+        client_ai = genai.Client(api_key=api_key)
+
+        prompt_sistema = """
+        Eres un dermatólogo y experto cosmetólogo de categoría mundial especializado en la marca Mary Kay. 
+        Analiza detalladamente esta imagen de un rostro humano. 
+        Evalúa de forma estricta y realista:
+        1. Nivel de hidratación (porcentaje de 0 a 100).
+        2. Nivel de oleosidad / sebo en Zona T (porcentaje de 0 a 100).
+        3. Visibilidad de poros y textura (porcentaje de 0 a 100).
+        4. Sensibilidad / reactividad o líneas de expresión (porcentaje de 0 a 100).
+        5. Tipo de piel predominante (Grasa, Seca, Mixta, Sensible o Normal).
+        6. Una evaluación del experto redactada de manera profesional, empática y comercial.
+
+        Debes responder estrictamente en formato JSON válido con esta estructura exacta, sin texto adicional fuera del JSON:
+        {
+          "tipo_piel": "...",
+          "clasificacion": "...",
+          "porcentajes": {
+            "hidratacion": 00,
+            "oleosidad": 00,
+            "textura_poros": 00,
+            "sensibilidad_lineas": 00
+          },
+          "evaluacion_experto": "..."
+        }
+        """
+
+        response = client_ai.models.generate_content(
+            model='gemini-3.8-flash',
+            contents=[
+                types.Part.from_bytes(
+                    data=image_bytes,
+                    mime_type='image/jpeg',
+                ),
+                prompt_sistema
+            ]
+        )
+
+        texto_respuesta = response.text.strip()
+        if texto_respuesta.startswith("```json"):
+            texto_respuesta = texto_respuesta[7:-3].strip()
+        elif texto_respuesta.startswith("```"):
+            texto_respuesta = texto_respuesta[3:-3].strip()
+
+        diagnostico_ia = json.loads(texto_respuesta)
+
+        tipo_detectado = diagnostico_ia["tipo_piel"]
+        query = db.query(models.Producto).filter(models.Producto.activo == True)
+        
+        if "Grasa" in tipo_detectado or "Mixta" in tipo_detectado:
+            productos_query = query.filter(models.Producto.descripcion.ilike("%matificante%") | models.Producto.nombre.ilike("%timewise%")).limit(4).all()
+        elif "Seca" in tipo_detectado:
+            productos_query = query.filter(models.Producto.descripcion.ilike("%humectante%") | models.Producto.descripcion.ilike("%hidratante%")).limit(4).all()
+        else:
+            productos_query = query.limit(4).all()
+
+        if not productos_query:
+            productos_query = query.limit(4).all()
+
+        cremas_recomendadas = []
+        for p in productos_query:
+            precio_final = p.precio
+            if p.descuento_porcentaje and p.descuento_porcentaje > 0:
+                precio_final = p.precio * (1 - p.descuento_porcentaje / 100.0)
+            cremas_recomendadas.append({
+                "id": p.id,
+                "nombre": p.nombre,
+                "precio": precio_final,
+                "imagen_url": p.imagen_url,
+                "descripcion": p.descripcion
+            })
+
+        return {
+            "diagnostico": diagnostico_ia,
+            "cremas_recomendadas": cremas_recomendadas
+        }
+
+    except Exception as e:
+        print(f"🔥 ERROR EN IA: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error en IA: {str(e)}")
+
+@app.get("/analizador-piel", response_class=HTMLResponse)
+def vista_analizador_piel(request: Request):
+    return templates.TemplateResponse(request, "skin_analyzer_pro.html", {})
